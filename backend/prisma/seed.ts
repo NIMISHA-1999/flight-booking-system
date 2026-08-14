@@ -10,7 +10,7 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-  console.log("🌱 Seeding database...");
+  console.log("Seeding database...");
 
   await prisma.flight.createMany({
     data: [
@@ -50,7 +50,7 @@ async function main() {
     ],
   });
 
-  console.log("✅ Flight seed completed");
+  console.log("Flight seed completed");
 }
 
 main()
