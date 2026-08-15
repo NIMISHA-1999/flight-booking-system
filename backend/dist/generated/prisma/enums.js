@@ -17,7 +17,9 @@ exports.UserRole = {
 exports.BookingStatus = {
     PENDING: 'PENDING',
     CONFIRMED: 'CONFIRMED',
-    CANCELLED: 'CANCELLED'
+    CANCELLED: 'CANCELLED',
+    PAYMENT_FAILED: 'PAYMENT_FAILED',
+    REFUNDED: 'REFUNDED'
 };
 exports.PaymentStatus = {
     PENDING: 'PENDING',

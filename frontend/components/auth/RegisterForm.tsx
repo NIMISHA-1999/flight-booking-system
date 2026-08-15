@@ -56,28 +56,35 @@ export default function RegisterForm() {
     mode: "onBlur",
   });
 
-  const onSubmit = async (data: FormData) => {
-    try {
-      await registerUser({
-        firstName: data.firstName.trim(),
-        lastName: data.lastName.trim(),
-        email: data.email.trim().toLowerCase(),
-        password: data.password,
-      });
+ const onSubmit = async (data: FormData) => {
+  try {
+    const response = await registerUser({
+      firstName: data.firstName.trim(),
+      lastName: data.lastName.trim(),
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+    });
 
-      toast.success("Account created successfully!");
+    console.log("REGISTRATION SUCCESS:", response);
 
+    toast.success("Account created successfully!");
+
+    // Small delay so the toast can be displayed
+    setTimeout(() => {
       router.push("/login");
-    } catch (error: any) {
-      console.error("Registration error:", error);
+    }, 500);
 
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Registration failed. Please try again."
-      );
-    }
-  };
+  } catch (error: any) {
+    console.error("Registration error:", error);
+
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Registration failed. Please try again.";
+
+    toast.error(message);
+  }
+};
 
   return (
     <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-900/20 sm:p-8">

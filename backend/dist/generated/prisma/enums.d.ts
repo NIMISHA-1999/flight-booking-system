@@ -7,6 +7,8 @@ export declare const BookingStatus: {
     readonly PENDING: "PENDING";
     readonly CONFIRMED: "CONFIRMED";
     readonly CANCELLED: "CANCELLED";
+    readonly PAYMENT_FAILED: "PAYMENT_FAILED";
+    readonly REFUNDED: "REFUNDED";
 };
 export type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus];
 export declare const PaymentStatus: {

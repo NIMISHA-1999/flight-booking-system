@@ -1,37 +1,95 @@
-import jwt, { Secret, SignOptions } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
-const ACCESS_TOKEN_SECRET: Secret =
-  process.env.JWT_ACCESS_SECRET || "access_secret";
+const ACCESS_TOKEN_SECRET: string =
+  process.env.JWT_ACCESS_SECRET ?? "";
 
-const REFRESH_TOKEN_SECRET: Secret =
-  process.env.JWT_REFRESH_SECRET || "refresh_secret";
+const REFRESH_TOKEN_SECRET: string =
+  process.env.JWT_REFRESH_SECRET ?? "";
 
-interface JwtPayload {
-  userId: string;
-  email: string;
-  role: string;
+const ACCESS_TOKEN_EXPIRES_IN =
+  process.env.JWT_ACCESS_EXPIRES_IN ?? "15m";
+
+const REFRESH_TOKEN_EXPIRES_IN =
+  process.env.JWT_REFRESH_EXPIRES_IN ?? "7d";
+
+if (!ACCESS_TOKEN_SECRET) {
+  throw new Error("JWT_ACCESS_SECRET is not defined");
 }
 
-export const generateAccessToken = (payload: JwtPayload): string => {
-  const options: SignOptions = {
-    expiresIn: "15m",
-  };
+if (!REFRESH_TOKEN_SECRET) {
+  throw new Error("JWT_REFRESH_SECRET is not defined");
+}
 
-  return jwt.sign(payload, ACCESS_TOKEN_SECRET, options);
-};
+export interface JwtPayload {
+  userId: string;
+  email: string;
+  role: "USER" | "ADMIN";
+}
 
-export const generateRefreshToken = (payload: JwtPayload): string => {
-  const options: SignOptions = {
-    expiresIn: "7d",
-  };
+export function generateAccessToken(
+  payload: JwtPayload
+): string {
+  return jwt.sign(
+    payload,
+    ACCESS_TOKEN_SECRET,
+    {
+      expiresIn:
+        ACCESS_TOKEN_EXPIRES_IN as jwt.SignOptions["expiresIn"],
+    }
+  );
+}
 
-  return jwt.sign(payload, REFRESH_TOKEN_SECRET, options);
-};
+export function generateRefreshToken(
+  payload: JwtPayload
+): string {
+  return jwt.sign(
+    payload,
+    REFRESH_TOKEN_SECRET,
+    {
+      expiresIn:
+        REFRESH_TOKEN_EXPIRES_IN as jwt.SignOptions["expiresIn"],
+    }
+  );
+}
 
-export const verifyAccessToken = (token: string): JwtPayload => {
-  return jwt.verify(token, ACCESS_TOKEN_SECRET) as JwtPayload;
-};
+export function verifyAccessToken(
+  token: string
+): JwtPayload {
+  const decoded = jwt.verify(
+    token,
+    ACCESS_TOKEN_SECRET
+  );
 
-export const verifyRefreshToken = (token: string): JwtPayload => {
-  return jwt.verify(token, REFRESH_TOKEN_SECRET) as JwtPayload;
-};
+  if (
+    typeof decoded !== "object" ||
+    decoded === null ||
+    !("userId" in decoded) ||
+    !("email" in decoded) ||
+    !("role" in decoded)
+  ) {
+    throw new Error("Invalid access token payload");
+  }
+
+  return decoded as unknown as JwtPayload;
+}
+
+export function verifyRefreshToken(
+  token: string
+): JwtPayload {
+  const decoded = jwt.verify(
+    token,
+    REFRESH_TOKEN_SECRET
+  );
+
+  if (
+    typeof decoded !== "object" ||
+    decoded === null ||
+    !("userId" in decoded) ||
+    !("email" in decoded) ||
+    !("role" in decoded)
+  ) {
+    throw new Error("Invalid refresh token payload");
+  }
+
+  return decoded as unknown as JwtPayload;
+}
