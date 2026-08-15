@@ -79,19 +79,21 @@ export default function BookingCard({
     booking.flight.arrivalAt,
   );
 
-  const formatTime = (date: Date) =>
-    date.toLocaleTimeString([], {
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
 
-  const formatDate = (date: Date) =>
-    date.toLocaleDateString([], {
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString([], {
       weekday: "short",
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
+  };
 
   /*
    * =====================================================
@@ -171,6 +173,17 @@ export default function BookingCard({
   /*
    * =====================================================
    * CANCEL BOOKING
+   *
+   * Backend must:
+   *
+   * 1. Verify authenticated user
+   * 2. Verify booking belongs to user
+   * 3. Check Saturday cancellation policy
+   * 4. Check booking status
+   * 5. Process Stripe refund
+   * 6. Release held seat
+   * 7. Mark booking CANCELLED
+   *
    * =====================================================
    */
 
@@ -179,6 +192,9 @@ export default function BookingCard({
       setCancelling(true);
       setCancelError("");
 
+      /*
+       * Get authentication token
+       */
       const token =
         localStorage.getItem("accessToken");
 
@@ -192,6 +208,9 @@ export default function BookingCard({
         return;
       }
 
+      /*
+       * Check API URL
+       */
       const apiUrl =
         process.env.NEXT_PUBLIC_API_URL;
 
@@ -201,8 +220,18 @@ export default function BookingCard({
         );
       }
 
+      /*
+       * Send cancellation request
+       *
+       * Example:
+       *
+       * PATCH
+       * http://localhost:4000/api/bookings/:id/cancel
+       */
       const response = await fetch(
-        `${apiUrl}/bookings/${booking.id}/cancel`,
+        `${apiUrl}/bookings/${encodeURIComponent(
+          booking.id,
+        )}/cancel`,
         {
           method: "PATCH",
 
@@ -213,6 +242,9 @@ export default function BookingCard({
         },
       );
 
+      /*
+       * Safely parse response
+       */
       let data: {
         success?: boolean;
         message?: string;
@@ -229,6 +261,9 @@ export default function BookingCard({
         data,
       );
 
+      /*
+       * Backend rejected request
+       */
       if (!response.ok) {
         throw new Error(
           data.message ||
@@ -237,12 +272,12 @@ export default function BookingCard({
       }
 
       /*
-       * Close popup after successful cancellation
+       * Successful cancellation
        */
       setShowCancelModal(false);
 
       /*
-       * Reload booking list so the new
+       * Refresh booking list so the
        * CANCELLED status is displayed.
        */
       window.location.reload();
@@ -1292,6 +1327,7 @@ export default function BookingCard({
             flex
             items-center
             justify-center
+            overflow-y-auto
             bg-slate-950/60
             px-4
             py-6
@@ -1317,11 +1353,13 @@ export default function BookingCard({
               zoom-in-95
               duration-200
             "
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
           >
-            {/* Modal Header */}
+            {/* ================================================= */}
+            {/* MODAL HEADER */}
+            {/* ================================================= */}
 
             <div
               className="
@@ -1398,9 +1436,15 @@ export default function BookingCard({
               </div>
             </div>
 
-            {/* Booking Information */}
+            {/* ================================================= */}
+            {/* MODAL CONTENT */}
+            {/* ================================================= */}
 
             <div className="px-6 py-5">
+              {/* ================================================= */}
+              {/* BOOKING INFORMATION */}
+              {/* ================================================= */}
+
               <div
                 className="
                   rounded-2xl
@@ -1515,11 +1559,123 @@ export default function BookingCard({
                 </div>
               </div>
 
-              {/* Warning */}
+              {/* ================================================= */}
+              {/* CANCELLATION POLICY */}
+              {/* ================================================= */}
 
               <div
                 className="
                   mt-4
+                  rounded-2xl
+                  border
+                  border-blue-100
+                  bg-blue-50/70
+                  p-4
+                "
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className="
+                      flex
+                      h-9
+                      w-9
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-xl
+                      bg-blue-100
+                      text-blue-600
+                    "
+                  >
+                    <CalendarDays size={17} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p
+                      className="
+                        text-xs
+                        font-black
+                        uppercase
+                        tracking-[0.12em]
+                        text-blue-800
+                      "
+                    >
+                      Cancellation Policy
+                    </p>
+
+                    <p
+                      className="
+                        mt-1.5
+                        text-xs
+                        leading-5
+                        text-blue-700
+                      "
+                    >
+                      You can cancel this booking
+                      up to{" "}
+                      <span className="font-black">
+                        Saturday before your
+                        scheduled departure.
+                      </span>
+                    </p>
+
+                    <p
+                      className="
+                        mt-1
+                        text-[11px]
+                        leading-5
+                        text-blue-600
+                      "
+                    >
+                      Cancellations outside this
+                      policy window will be rejected.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ================================================= */}
+              {/* REFUND INFORMATION */}
+              {/* ================================================= */}
+
+              <div
+                className="
+                  mt-3
+                  flex
+                  items-start
+                  gap-2.5
+                  rounded-xl
+                  border
+                  border-emerald-100
+                  bg-emerald-50
+                  px-3.5
+                  py-3
+                  text-xs
+                  leading-5
+                  text-emerald-700
+                "
+              >
+                <CreditCard
+                  size={15}
+                  className="mt-0.5 shrink-0"
+                />
+
+                <span>
+                  If the cancellation is eligible,
+                  your payment will be refunded
+                  through Stripe and the reserved
+                  seat will be released back to
+                  inventory.
+                </span>
+              </div>
+
+              {/* ================================================= */}
+              {/* WARNING */}
+              {/* ================================================= */}
+
+              <div
+                className="
+                  mt-3
                   flex
                   items-start
                   gap-2.5
@@ -1536,20 +1692,19 @@ export default function BookingCard({
               >
                 <AlertTriangle
                   size={15}
-                  className="
-                    mt-0.5
-                    shrink-0
-                  "
+                  className="mt-0.5 shrink-0"
                 />
 
                 <span>
                   This action cannot be undone.
-                  Your booking will be marked as
-                  cancelled.
+                  Once cancelled, the booking
+                  cannot be restored.
                 </span>
               </div>
 
-              {/* Error */}
+              {/* ================================================= */}
+              {/* BACKEND ERROR */}
+              {/* ================================================= */}
 
               {cancelError && (
                 <div
@@ -1584,7 +1739,9 @@ export default function BookingCard({
               )}
             </div>
 
-            {/* Modal Actions */}
+            {/* ================================================= */}
+            {/* MODAL ACTIONS */}
+            {/* ================================================= */}
 
             <div
               className="
@@ -1600,6 +1757,8 @@ export default function BookingCard({
                 sm:justify-end
               "
             >
+              {/* KEEP BOOKING */}
+
               <button
                 type="button"
                 onClick={closeCancelModal}
@@ -1629,6 +1788,8 @@ export default function BookingCard({
               >
                 Keep Booking
               </button>
+
+              {/* CONFIRM CANCEL */}
 
               <button
                 type="button"
@@ -1675,9 +1836,7 @@ export default function BookingCard({
                   </>
                 ) : (
                   <>
-                    <CheckCircle2
-                      size={16}
-                    />
+                    <CheckCircle2 size={16} />
 
                     Yes, Cancel Booking
                   </>
