@@ -1,7 +1,4 @@
-import {
-  Request,
-  Response,
-} from "express";
+import { Request, Response } from "express";
 
 import { prisma } from "../config/database";
 import { stripe } from "../config/stripe";
@@ -23,17 +20,9 @@ import { stripe } from "../config/stripe";
  * =====================================================
  */
 
-export const getAllBookings = async (
-  req: Request,
-  res: Response,
-) => {
+export const getAllBookings = async (req: Request, res: Response) => {
   try {
-    const {
-      status,
-      origin,
-      destination,
-      date,
-    } = req.query;
+    const { status, origin, destination, date } = req.query;
 
     /*
      * =====================================================
@@ -41,31 +30,19 @@ export const getAllBookings = async (
      * =====================================================
      */
 
-    const requestedPage = Number(
-      req.query.page,
-    );
+    const requestedPage = Number(req.query.page);
 
-    const requestedLimit = Number(
-      req.query.limit,
-    );
+    const requestedLimit = Number(req.query.limit);
 
     const page =
-      Number.isInteger(requestedPage) &&
-      requestedPage > 0
-        ? requestedPage
-        : 1;
+      Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
     const limit =
-      Number.isInteger(requestedLimit) &&
-      requestedLimit > 0
-        ? Math.min(
-            requestedLimit,
-            100,
-          )
+      Number.isInteger(requestedLimit) && requestedLimit > 0
+        ? Math.min(requestedLimit, 100)
         : 10;
 
-    const skip =
-      (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
     /*
      * =====================================================
@@ -82,7 +59,28 @@ export const getAllBookings = async (
      */
 
     if (status) {
-      where.status = String(status);
+      const bookingStatus = String(status).trim();
+
+      if (bookingStatus === "REFUNDED") {
+        /*
+         * REFUNDED is a PAYMENT status,
+         * not necessarily a BOOKING status.
+         *
+         * When an admin cancels a successfully
+         * paid booking:
+         *
+         * booking.status = CANCELLED
+         * payment.status = REFUNDED
+         */
+        where.payment = {
+          status: "REFUNDED",
+        };
+      } else {
+        /*
+         * All other statuses belong to Booking.
+         */
+        where.status = bookingStatus;
+      }
     }
 
     /*
@@ -94,8 +92,7 @@ export const getAllBookings = async (
     const flightFilter: any = {};
 
     if (origin) {
-      const originValue =
-        String(origin).trim();
+      const originValue = String(origin).trim();
 
       if (originValue) {
         flightFilter.origin = {
@@ -106,8 +103,7 @@ export const getAllBookings = async (
     }
 
     if (destination) {
-      const destinationValue =
-        String(destination).trim();
+      const destinationValue = String(destination).trim();
 
       if (destinationValue) {
         flightFilter.destination = {
@@ -124,24 +120,15 @@ export const getAllBookings = async (
      */
 
     if (date) {
-      const dateString =
-        String(date).trim();
+      const dateString = String(date).trim();
 
-      const startDate = new Date(
-        `${dateString}T00:00:00`,
-      );
+      const startDate = new Date(`${dateString}T00:00:00`);
 
-      const endDate = new Date(
-        `${dateString}T23:59:59.999`,
-      );
+      const endDate = new Date(`${dateString}T23:59:59.999`);
 
       if (
-        !Number.isNaN(
-          startDate.getTime(),
-        ) &&
-        !Number.isNaN(
-          endDate.getTime(),
-        )
+        !Number.isNaN(startDate.getTime()) &&
+        !Number.isNaN(endDate.getTime())
       ) {
         flightFilter.departureAt = {
           gte: startDate,
@@ -155,11 +142,7 @@ export const getAllBookings = async (
      * when something exists.
      */
 
-    if (
-      Object.keys(
-        flightFilter,
-      ).length > 0
-    ) {
+    if (Object.keys(flightFilter).length > 0) {
       where.flight = flightFilter;
     }
 
@@ -169,10 +152,9 @@ export const getAllBookings = async (
      * =====================================================
      */
 
-    const total =
-      await prisma.booking.count({
-        where,
-      });
+    const total = await prisma.booking.count({
+      where,
+    });
 
     /*
      * =====================================================
@@ -192,88 +174,87 @@ export const getAllBookings = async (
      * =====================================================
      */
 
-    const bookings =
-      await prisma.booking.findMany({
-        where,
+    const bookings = await prisma.booking.findMany({
+      where,
 
-        include: {
-          /*
-           * =================================================
-           * USER
-           * =================================================
-           *
-           * User has firstName + lastName.
-           * There is no "name" field.
-           */
+      include: {
+        /*
+         * =================================================
+         * USER
+         * =================================================
+         *
+         * User has firstName + lastName.
+         * There is no "name" field.
+         */
 
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              role: true,
-            },
-          },
-
-          /*
-           * =================================================
-           * FLIGHT
-           * =================================================
-           */
-
-          flight: {
-            select: {
-              id: true,
-              airline: true,
-              flightNumber: true,
-              origin: true,
-              destination: true,
-              departureAt: true,
-              arrivalAt: true,
-              fare: true,
-              totalSeats: true,
-              availableSeats: true,
-            },
-          },
-
-          /*
-           * =================================================
-           * PASSENGERS
-           * =================================================
-           */
-
-          passengers: true,
-
-          /*
-           * =================================================
-           * PAYMENT
-           * =================================================
-           *
-           * Singular relation.
-           */
-
-          payment: {
-            select: {
-              id: true,
-              amount: true,
-              currency: true,
-              status: true,
-              stripePaymentIntentId: true,
-              paidAt: true,
-              refundedAt: true,
-            },
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
           },
         },
 
-        orderBy: {
-          createdAt: "desc",
+        /*
+         * =================================================
+         * FLIGHT
+         * =================================================
+         */
+
+        flight: {
+          select: {
+            id: true,
+            airline: true,
+            flightNumber: true,
+            origin: true,
+            destination: true,
+            departureAt: true,
+            arrivalAt: true,
+            fare: true,
+            totalSeats: true,
+            availableSeats: true,
+          },
         },
 
-        skip,
+        /*
+         * =================================================
+         * PASSENGERS
+         * =================================================
+         */
 
-        take: limit,
-      });
+        passengers: true,
+
+        /*
+         * =================================================
+         * PAYMENT
+         * =================================================
+         *
+         * Singular relation.
+         */
+
+        payment: {
+          select: {
+            id: true,
+            amount: true,
+            currency: true,
+            status: true,
+            stripePaymentIntentId: true,
+            paidAt: true,
+            refundedAt: true,
+          },
+        },
+      },
+
+      orderBy: {
+        createdAt: "desc",
+      },
+
+      skip,
+
+      take: limit,
+    });
 
     /*
      * =====================================================
@@ -281,18 +262,9 @@ export const getAllBookings = async (
      * =====================================================
      */
 
-    const totalPages =
-      total === 0
-        ? 1
-        : Math.ceil(
-            total / limit,
-          );
+    const totalPages = total === 0 ? 1 : Math.ceil(total / limit);
 
-    const currentPage =
-      Math.min(
-        page,
-        totalPages,
-      );
+    const currentPage = Math.min(page, totalPages);
 
     /*
      * =====================================================
@@ -304,46 +276,32 @@ export const getAllBookings = async (
      * =====================================================
      */
 
-    const formattedBookings =
-      bookings.map(
-        (booking) => ({
-          ...booking,
+    const formattedBookings = bookings.map((booking) => ({
+      ...booking,
 
-          totalAmount:
-            Number(
-              booking.totalAmount,
-            ),
+      totalAmount: Number(booking.totalAmount),
 
-          flight: {
-            ...booking.flight,
+      flight: {
+        ...booking.flight,
 
-            fare: Number(
-              booking.flight.fare,
-            ),
-          },
+        fare: Number(booking.flight.fare),
+      },
 
-          payment:
-            booking.payment
-              ? {
-                  ...booking.payment,
+      payment: booking.payment
+        ? {
+            ...booking.payment,
 
-                  amount: Number(
-                    booking.payment
-                      .amount,
-                  ),
-                }
-              : null,
-        }),
-      );
+            amount: Number(booking.payment.amount),
+          }
+        : null,
+    }));
 
     return res.status(200).json({
       success: true,
 
-      count:
-        formattedBookings.length,
+      count: formattedBookings.length,
 
-      bookings:
-        formattedBookings,
+      bookings: formattedBookings,
 
       pagination: {
         page: currentPage,
@@ -353,16 +311,12 @@ export const getAllBookings = async (
       },
     });
   } catch (error) {
-    console.error(
-      "GET ADMIN BOOKINGS ERROR:",
-      error,
-    );
+    console.error("GET ADMIN BOOKINGS ERROR:", error);
 
     return res.status(500).json({
       success: false,
 
-      message:
-        "Unable to load bookings.",
+      message: "Unable to load bookings.",
     });
   }
 };
@@ -373,12 +327,8 @@ export const getAllBookings = async (
  * =====================================================
  */
 
-export const cancelBooking = async (
-  req: Request,
-  res: Response,
-) => {
-  const { bookingId } =
-    req.params;
+export const cancelBooking = async (req: Request, res: Response) => {
+  const { bookingId } = req.params;
 
   try {
     /*
@@ -387,27 +337,24 @@ export const cancelBooking = async (
      * =====================================================
      */
 
-    const booking =
-      await prisma.booking.findUnique({
-        where: {
-          id: bookingId,
-        },
+    const booking = await prisma.booking.findUnique({
+      where: {
+        id: bookingId,
+      },
 
-        include: {
-          flight: true,
-          payment: true,
-        },
-      });
+      include: {
+        flight: true,
+        payment: true,
+      },
+    });
 
     if (!booking) {
       return res.status(404).json({
         success: false,
 
-        message:
-          "Booking not found.",
+        message: "Booking not found.",
 
-        code:
-          "BOOKING_NOT_FOUND",
+        code: "BOOKING_NOT_FOUND",
       });
     }
 
@@ -417,18 +364,13 @@ export const cancelBooking = async (
      * =====================================================
      */
 
-    if (
-      booking.status ===
-      "CANCELLED"
-    ) {
+    if (booking.status === "CANCELLED") {
       return res.status(400).json({
         success: false,
 
-        message:
-          "Booking is already cancelled.",
+        message: "Booking is already cancelled.",
 
-        code:
-          "BOOKING_ALREADY_CANCELLED",
+        code: "BOOKING_ALREADY_CANCELLED",
       });
     }
 
@@ -449,10 +391,8 @@ export const cancelBooking = async (
 
     const successfulPayment =
       booking.payment &&
-      booking.payment.status ===
-        "SUCCEEDED" &&
-      booking.payment
-        .stripePaymentIntentId
+      booking.payment.status === "SUCCEEDED" &&
+      booking.payment.stripePaymentIntentId
         ? booking.payment
         : null;
 
@@ -462,29 +402,17 @@ export const cancelBooking = async (
      * =====================================================
      */
 
-    let refundId:
-      | string
-      | null = null;
+    let refundId: string | null = null;
 
-    if (
-      successfulPayment
-    ) {
+    if (successfulPayment) {
       try {
-        const refund =
-          await stripe.refunds.create(
-            {
-              payment_intent:
-                successfulPayment.stripePaymentIntentId,
-            },
-          );
+        const refund = await stripe.refunds.create({
+          payment_intent: successfulPayment.stripePaymentIntentId,
+        });
 
-        refundId =
-          refund.id;
+        refundId = refund.id;
       } catch (stripeError) {
-        console.error(
-          "STRIPE REFUND ERROR:",
-          stripeError,
-        );
+        console.error("STRIPE REFUND ERROR:", stripeError);
 
         return res.status(502).json({
           success: false,
@@ -492,8 +420,7 @@ export const cancelBooking = async (
           message:
             "Stripe refund could not be processed. Booking was not cancelled and seats were not released.",
 
-          code:
-            "STRIPE_REFUND_FAILED",
+          code: "STRIPE_REFUND_FAILED",
         });
       }
     }
@@ -504,123 +431,100 @@ export const cancelBooking = async (
      * =====================================================
      */
 
-    const cancelledBooking =
-      await prisma.$transaction(
-        async (tx) => {
-          /*
-           * =================================================
-           * RE-CHECK BOOKING
-           * =================================================
-           */
+    const cancelledBooking = await prisma.$transaction(async (tx) => {
+      /*
+       * =================================================
+       * RE-CHECK BOOKING
+       * =================================================
+       */
 
-          const currentBooking =
-            await tx.booking.findUnique(
-              {
-                where: {
-                  id: bookingId,
-                },
-              },
-            );
-
-          if (!currentBooking) {
-            throw new Error(
-              "Booking not found.",
-            );
-          }
-
-          /*
-           * Prevent duplicate cancellation.
-           */
-
-          if (
-            currentBooking.status ===
-            "CANCELLED"
-          ) {
-            throw new Error(
-              "Booking is already cancelled.",
-            );
-          }
-
-          /*
-           * =================================================
-           * RELEASE SEATS
-           * =================================================
-           */
-
-          await tx.flight.update({
-            where: {
-              id:
-                currentBooking.flightId,
-            },
-
-            data: {
-              availableSeats: {
-                increment:
-                  currentBooking.passengerCount,
-              },
-            },
-          });
-
-          /*
-           * =================================================
-           * CANCEL BOOKING
-           * =================================================
-           *
-           * Your Booking model does NOT have:
-           *
-           * cancelledAt
-           *
-           * Therefore we only update status.
-           */
-
-          const cancelled =
-            await tx.booking.update({
-              where: {
-                id: bookingId,
-              },
-
-              data: {
-                status:
-                  "CANCELLED",
-              },
-            });
-
-          /*
-           * =================================================
-           * UPDATE PAYMENT
-           * =================================================
-           *
-           * Payment has:
-           *
-           * status
-           * refundedAt
-           *
-           * It does NOT have stripeRefundId.
-           */
-
-          if (
-            successfulPayment &&
-            refundId
-          ) {
-            await tx.payment.update({
-              where: {
-                id:
-                  successfulPayment.id,
-              },
-
-              data: {
-                status:
-                  "REFUNDED",
-
-                refundedAt:
-                  new Date(),
-              },
-            });
-          }
-
-          return cancelled;
+      const currentBooking = await tx.booking.findUnique({
+        where: {
+          id: bookingId,
         },
-      );
+      });
+
+      if (!currentBooking) {
+        throw new Error("Booking not found.");
+      }
+
+      /*
+       * Prevent duplicate cancellation.
+       */
+
+      if (currentBooking.status === "CANCELLED") {
+        throw new Error("Booking is already cancelled.");
+      }
+
+      /*
+       * =================================================
+       * RELEASE SEATS
+       * =================================================
+       */
+
+      await tx.flight.update({
+        where: {
+          id: currentBooking.flightId,
+        },
+
+        data: {
+          availableSeats: {
+            increment: currentBooking.passengerCount,
+          },
+        },
+      });
+
+      /*
+       * =================================================
+       * CANCEL BOOKING
+       * =================================================
+       *
+       * Your Booking model does NOT have:
+       *
+       * cancelledAt
+       *
+       * Therefore we only update status.
+       */
+
+      const cancelled = await tx.booking.update({
+        where: {
+          id: bookingId,
+        },
+
+        data: {
+          status: "CANCELLED",
+        },
+      });
+
+      /*
+       * =================================================
+       * UPDATE PAYMENT
+       * =================================================
+       *
+       * Payment has:
+       *
+       * status
+       * refundedAt
+       *
+       * It does NOT have stripeRefundId.
+       */
+
+      if (successfulPayment && refundId) {
+        await tx.payment.update({
+          where: {
+            id: successfulPayment.id,
+          },
+
+          data: {
+            status: "REFUNDED",
+
+            refundedAt: new Date(),
+          },
+        });
+      }
+
+      return cancelled;
+    });
 
     /*
      * =====================================================
@@ -631,29 +535,22 @@ export const cancelBooking = async (
     return res.json({
       success: true,
 
-      message:
-        successfulPayment
-          ? "Booking cancelled and Stripe refund processed successfully."
-          : "Booking cancelled and seats released successfully.",
+      message: successfulPayment
+        ? "Booking cancelled and Stripe refund processed successfully."
+        : "Booking cancelled and seats released successfully.",
 
-      booking:
-        cancelledBooking,
+      booking: cancelledBooking,
 
       refundId,
     });
   } catch (error) {
-    console.error(
-      "ADMIN CANCEL BOOKING ERROR:",
-      error,
-    );
+    console.error("ADMIN CANCEL BOOKING ERROR:", error);
 
     return res.status(400).json({
       success: false,
 
       message:
-        error instanceof Error
-          ? error.message
-          : "Unable to cancel booking.",
+        error instanceof Error ? error.message : "Unable to cancel booking.",
     });
   }
 };
@@ -664,188 +561,147 @@ export const cancelBooking = async (
  * =====================================================
  */
 
-export const getDashboardStats =
-  async (
-    req: Request,
-    res: Response,
-  ) => {
-    try {
+export const getDashboardStats = async (req: Request, res: Response) => {
+  try {
+    /*
+     * =================================================
+     * TODAY RANGE
+     * =================================================
+     */
+
+    const startOfToday = new Date();
+
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfToday = new Date();
+
+    endOfToday.setHours(23, 59, 59, 999);
+
+    /*
+     * =================================================
+     * PARALLEL QUERIES
+     * =================================================
+     */
+
+    const [
+      bookingsToday,
+      totalBookings,
+      pendingBookings,
+      confirmedBookings,
+      cancelledBookings,
+      paymentRevenue,
+    ] = await Promise.all([
       /*
-       * =================================================
-       * TODAY RANGE
-       * =================================================
+       * BOOKINGS TODAY
        */
 
-      const startOfToday =
-        new Date();
+      prisma.booking.count({
+        where: {
+          createdAt: {
+            gte: startOfToday,
 
-      startOfToday.setHours(
-        0,
-        0,
-        0,
-        0,
-      );
-
-      const endOfToday =
-        new Date();
-
-      endOfToday.setHours(
-        23,
-        59,
-        59,
-        999,
-      );
-
-      /*
-       * =================================================
-       * PARALLEL QUERIES
-       * =================================================
-       */
-
-      const [
-        bookingsToday,
-        totalBookings,
-        pendingBookings,
-        confirmedBookings,
-        cancelledBookings,
-        paymentRevenue,
-      ] =
-        await Promise.all([
-          /*
-           * BOOKINGS TODAY
-           */
-
-          prisma.booking.count({
-            where: {
-              createdAt: {
-                gte:
-                  startOfToday,
-
-                lte:
-                  endOfToday,
-              },
-            },
-          }),
-
-          /*
-           * TOTAL BOOKINGS
-           */
-
-          prisma.booking.count(),
-
-          /*
-           * PENDING
-           */
-
-          prisma.booking.count({
-            where: {
-              status:
-                "PENDING",
-            },
-          }),
-
-          /*
-           * CONFIRMED
-           */
-
-          prisma.booking.count({
-            where: {
-              status:
-                "CONFIRMED",
-            },
-          }),
-
-          /*
-           * CANCELLED
-           */
-
-          prisma.booking.count({
-            where: {
-              status:
-                "CANCELLED",
-            },
-          }),
-
-          /*
-           * REVENUE
-           *
-           * Only successful payments.
-           */
-
-          prisma.payment.aggregate({
-            where: {
-              status:
-                "SUCCEEDED",
-            },
-
-            _sum: {
-              amount: true,
-            },
-          }),
-        ]);
-
-      /*
-       * =================================================
-       * CANCELLATION RATE
-       * =================================================
-       */
-
-      const cancellationRate =
-        totalBookings > 0
-          ? (cancelledBookings /
-              totalBookings) *
-            100
-          : 0;
-
-      /*
-       * =================================================
-       * RESPONSE
-       * =================================================
-       */
-
-      return res.json({
-        success: true,
-
-        stats: {
-          bookingsToday,
-
-          totalBookings,
-
-          pendingBookings,
-
-          confirmedBookings,
-
-          cancelledBookings,
-
-          revenue:
-            Number(
-              paymentRevenue
-                ._sum.amount ||
-                0,
-            ),
-
-          cancellationRate:
-            Number(
-              cancellationRate.toFixed(
-                2,
-              ),
-            ),
+            lte: endOfToday,
+          },
         },
-      });
-    } catch (error) {
-      console.error(
-        "ADMIN DASHBOARD ERROR:",
-        error,
-      );
+      }),
 
-      return res.status(500).json({
-        success: false,
+      /*
+       * TOTAL BOOKINGS
+       */
 
-        message:
-          "Unable to load dashboard statistics.",
-      });
-    }
-  };
+      prisma.booking.count(),
+
+      /*
+       * PENDING
+       */
+
+      prisma.booking.count({
+        where: {
+          status: "PENDING",
+        },
+      }),
+
+      /*
+       * CONFIRMED
+       */
+
+      prisma.booking.count({
+        where: {
+          status: "CONFIRMED",
+        },
+      }),
+
+      /*
+       * CANCELLED
+       */
+
+      prisma.booking.count({
+        where: {
+          status: "CANCELLED",
+        },
+      }),
+
+      /*
+       * REVENUE
+       *
+       * Only successful payments.
+       */
+
+      prisma.payment.aggregate({
+        where: {
+          status: "SUCCEEDED",
+        },
+
+        _sum: {
+          amount: true,
+        },
+      }),
+    ]);
+
+    /*
+     * =================================================
+     * CANCELLATION RATE
+     * =================================================
+     */
+
+    const cancellationRate =
+      totalBookings > 0 ? (cancelledBookings / totalBookings) * 100 : 0;
+
+    /*
+     * =================================================
+     * RESPONSE
+     * =================================================
+     */
+
+    return res.json({
+      success: true,
+
+      stats: {
+        bookingsToday,
+
+        totalBookings,
+
+        pendingBookings,
+
+        confirmedBookings,
+
+        cancelledBookings,
+
+        revenue: Number(paymentRevenue._sum.amount || 0),
+
+        cancellationRate: Number(cancellationRate.toFixed(2)),
+      },
+    });
+  } catch (error) {
+    console.error("ADMIN DASHBOARD ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+
+      message: "Unable to load dashboard statistics.",
+    });
+  }
+};
 
 /*
  * =====================================================
@@ -866,48 +722,24 @@ export const getDashboardStats =
  * =====================================================
  */
 
-export const getFlights = async (
-  req: Request,
-  res: Response,
-) => {
+export const getFlights = async (req: Request, res: Response) => {
   try {
     const search =
-      typeof req.query.search ===
-      "string"
-        ? req.query.search.trim()
-        : "";
+      typeof req.query.search === "string" ? req.query.search.trim() : "";
 
-    const requestedPage =
-      Number(
-        req.query.page,
-      );
+    const requestedPage = Number(req.query.page);
 
-    const requestedLimit =
-      Number(
-        req.query.limit,
-      );
+    const requestedLimit = Number(req.query.limit);
 
     const page =
-      Number.isInteger(
-        requestedPage,
-      ) &&
-      requestedPage > 0
-        ? requestedPage
-        : 1;
+      Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
     const limit =
-      Number.isInteger(
-        requestedLimit,
-      ) &&
-      requestedLimit > 0
-        ? Math.min(
-            requestedLimit,
-            100,
-          )
+      Number.isInteger(requestedLimit) && requestedLimit > 0
+        ? Math.min(requestedLimit, 100)
         : 10;
 
-    const skip =
-      (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
     /*
      * =================================================
@@ -921,41 +753,33 @@ export const getFlights = async (
       where.OR = [
         {
           flightNumber: {
-            contains:
-              search,
+            contains: search,
 
-            mode:
-              "insensitive",
+            mode: "insensitive",
           },
         },
 
         {
           airline: {
-            contains:
-              search,
+            contains: search,
 
-            mode:
-              "insensitive",
+            mode: "insensitive",
           },
         },
 
         {
           origin: {
-            contains:
-              search,
+            contains: search,
 
-            mode:
-              "insensitive",
+            mode: "insensitive",
           },
         },
 
         {
           destination: {
-            contains:
-              search,
+            contains: search,
 
-            mode:
-              "insensitive",
+            mode: "insensitive",
           },
         },
       ];
@@ -967,10 +791,9 @@ export const getFlights = async (
      * =================================================
      */
 
-    const total =
-      await prisma.flight.count({
-        where,
-      });
+    const total = await prisma.flight.count({
+      where,
+    });
 
     /*
      * =================================================
@@ -978,19 +801,17 @@ export const getFlights = async (
      * =================================================
      */
 
-    const flights =
-      await prisma.flight.findMany({
-        where,
+    const flights = await prisma.flight.findMany({
+      where,
 
-        orderBy: {
-          departureAt:
-            "asc",
-        },
+      orderBy: {
+        departureAt: "asc",
+      },
 
-        skip,
+      skip,
 
-        take: limit,
-      });
+      take: limit,
+    });
 
     /*
      * =================================================
@@ -998,18 +819,9 @@ export const getFlights = async (
      * =================================================
      */
 
-    const totalPages =
-      total === 0
-        ? 1
-        : Math.ceil(
-            total / limit,
-          );
+    const totalPages = total === 0 ? 1 : Math.ceil(total / limit);
 
-    const currentPage =
-      Math.min(
-        page,
-        totalPages,
-      );
+    const currentPage = Math.min(page, totalPages);
 
     /*
      * =================================================
@@ -1017,16 +829,11 @@ export const getFlights = async (
      * =================================================
      */
 
-    const formattedFlights =
-      flights.map(
-        (flight) => ({
-          ...flight,
+    const formattedFlights = flights.map((flight) => ({
+      ...flight,
 
-          fare: Number(
-            flight.fare,
-          ),
-        }),
-      );
+      fare: Number(flight.fare),
+    }));
 
     /*
      * =================================================
@@ -1037,12 +844,10 @@ export const getFlights = async (
     return res.status(200).json({
       success: true,
 
-      flights:
-        formattedFlights,
+      flights: formattedFlights,
 
       pagination: {
-        page:
-          currentPage,
+        page: currentPage,
 
         limit,
 
@@ -1052,16 +857,12 @@ export const getFlights = async (
       },
     });
   } catch (error) {
-    console.error(
-      "GET ADMIN FLIGHTS ERROR:",
-      error,
-    );
+    console.error("GET ADMIN FLIGHTS ERROR:", error);
 
     return res.status(500).json({
       success: false,
 
-      message:
-        "Unable to load flights.",
+      message: "Unable to load flights.",
     });
   }
 };
@@ -1072,215 +873,152 @@ export const getFlights = async (
  * =====================================================
  */
 
-export const createFlight =
-  async (
-    req: Request,
-    res: Response,
-  ) => {
-    try {
-      const {
-        airline,
-        flightNumber,
-        origin,
-        destination,
-        departureAt,
-        arrivalAt,
-        fare,
-        totalSeats,
-      } = req.body;
+export const createFlight = async (req: Request, res: Response) => {
+  try {
+    const {
+      airline,
+      flightNumber,
+      origin,
+      destination,
+      departureAt,
+      arrivalAt,
+      fare,
+      totalSeats,
+    } = req.body;
 
-      /*
-       * =================================================
-       * REQUIRED FIELDS
-       * =================================================
-       */
+    /*
+     * =================================================
+     * REQUIRED FIELDS
+     * =================================================
+     */
 
-      if (
-        !airline ||
-        !flightNumber ||
-        !origin ||
-        !destination ||
-        !departureAt ||
-        !arrivalAt ||
-        fare ===
-          undefined ||
-        totalSeats ===
-          undefined
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          message:
-            "All flight fields are required.",
-        });
-      }
-
-      /*
-       * =================================================
-       * DATE VALIDATION
-       * =================================================
-       */
-
-      const departureDate =
-        new Date(
-          departureAt,
-        );
-
-      const arrivalDate =
-        new Date(
-          arrivalAt,
-        );
-
-      if (
-        Number.isNaN(
-          departureDate.getTime(),
-        ) ||
-        Number.isNaN(
-          arrivalDate.getTime(),
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          message:
-            "Invalid departure or arrival date.",
-        });
-      }
-
-      if (
-        arrivalDate <=
-        departureDate
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          message:
-            "Arrival time must be after departure time.",
-        });
-      }
-
-      /*
-       * =================================================
-       * SEAT VALIDATION
-       * =================================================
-       */
-
-      const seats =
-        Number(
-          totalSeats,
-        );
-
-      if (
-        !Number.isInteger(
-          seats,
-        ) ||
-        seats <= 0
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          message:
-            "Total seats must be a positive integer.",
-        });
-      }
-
-      /*
-       * =================================================
-       * FARE VALIDATION
-       * =================================================
-       */
-
-      const flightFare =
-        Number(fare);
-
-      if (
-        !Number.isFinite(
-          flightFare,
-        ) ||
-        flightFare < 0
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          message:
-            "Fare must be a valid non-negative number.",
-        });
-      }
-
-      /*
-       * =================================================
-       * CREATE FLIGHT
-       * =================================================
-       */
-
-      const flight =
-        await prisma.flight.create({
-          data: {
-            airline:
-              String(
-                airline,
-              ).trim(),
-
-            flightNumber:
-              String(
-                flightNumber,
-              ).trim(),
-
-            origin:
-              String(
-                origin,
-              ).trim(),
-
-            destination:
-              String(
-                destination,
-              ).trim(),
-
-            departureAt:
-              departureDate,
-
-            arrivalAt:
-              arrivalDate,
-
-            fare:
-              flightFare,
-
-            totalSeats:
-              seats,
-
-            availableSeats:
-              seats,
-          },
-        });
-
-      return res.status(201).json({
-        success: true,
-
-        message:
-          "Flight created successfully.",
-
-        flight: {
-          ...flight,
-
-          fare: Number(
-            flight.fare,
-          ),
-        },
-      });
-    } catch (error) {
-      console.error(
-        "CREATE FLIGHT ERROR:",
-        error,
-      );
-
-      return res.status(500).json({
+    if (
+      !airline ||
+      !flightNumber ||
+      !origin ||
+      !destination ||
+      !departureAt ||
+      !arrivalAt ||
+      fare === undefined ||
+      totalSeats === undefined
+    ) {
+      return res.status(400).json({
         success: false,
 
-        message:
-          "Unable to create flight.",
+        message: "All flight fields are required.",
       });
     }
-  };
+
+    /*
+     * =================================================
+     * DATE VALIDATION
+     * =================================================
+     */
+
+    const departureDate = new Date(departureAt);
+
+    const arrivalDate = new Date(arrivalAt);
+
+    if (
+      Number.isNaN(departureDate.getTime()) ||
+      Number.isNaN(arrivalDate.getTime())
+    ) {
+      return res.status(400).json({
+        success: false,
+
+        message: "Invalid departure or arrival date.",
+      });
+    }
+
+    if (arrivalDate <= departureDate) {
+      return res.status(400).json({
+        success: false,
+
+        message: "Arrival time must be after departure time.",
+      });
+    }
+
+    /*
+     * =================================================
+     * SEAT VALIDATION
+     * =================================================
+     */
+
+    const seats = Number(totalSeats);
+
+    if (!Number.isInteger(seats) || seats <= 0) {
+      return res.status(400).json({
+        success: false,
+
+        message: "Total seats must be a positive integer.",
+      });
+    }
+
+    /*
+     * =================================================
+     * FARE VALIDATION
+     * =================================================
+     */
+
+    const flightFare = Number(fare);
+
+    if (!Number.isFinite(flightFare) || flightFare < 0) {
+      return res.status(400).json({
+        success: false,
+
+        message: "Fare must be a valid non-negative number.",
+      });
+    }
+
+    /*
+     * =================================================
+     * CREATE FLIGHT
+     * =================================================
+     */
+
+    const flight = await prisma.flight.create({
+      data: {
+        airline: String(airline).trim(),
+
+        flightNumber: String(flightNumber).trim(),
+
+        origin: String(origin).trim(),
+
+        destination: String(destination).trim(),
+
+        departureAt: departureDate,
+
+        arrivalAt: arrivalDate,
+
+        fare: flightFare,
+
+        totalSeats: seats,
+
+        availableSeats: seats,
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+
+      message: "Flight created successfully.",
+
+      flight: {
+        ...flight,
+
+        fare: Number(flight.fare),
+      },
+    });
+  } catch (error) {
+    console.error("CREATE FLIGHT ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+
+      message: "Unable to create flight.",
+    });
+  }
+};
 
 /*
  * =====================================================
@@ -1288,343 +1026,234 @@ export const createFlight =
  * =====================================================
  */
 
-export const updateFlight =
-  async (
-    req: Request,
-    res: Response,
-  ) => {
-    try {
-      const { flightId } =
-        req.params;
+export const updateFlight = async (req: Request, res: Response) => {
+  try {
+    const { flightId } = req.params;
 
-      /*
-       * =================================================
-       * FIND EXISTING FLIGHT
-       * =================================================
-       */
+    /*
+     * =================================================
+     * FIND EXISTING FLIGHT
+     * =================================================
+     */
 
-      const existingFlight =
-        await prisma.flight.findUnique({
-          where: {
-            id: flightId,
-          },
-        });
+    const existingFlight = await prisma.flight.findUnique({
+      where: {
+        id: flightId,
+      },
+    });
 
-      if (!existingFlight) {
-        return res.status(404).json({
-          success: false,
-
-          message:
-            "Flight not found.",
-        });
-      }
-
-      const {
-        airline,
-        flightNumber,
-        origin,
-        destination,
-        departureAt,
-        arrivalAt,
-        fare,
-        totalSeats,
-      } = req.body;
-
-      /*
-       * =================================================
-       * DATE VALIDATION
-       * =================================================
-       */
-
-      let departureDate:
-        | Date
-        | undefined;
-
-      let arrivalDate:
-        | Date
-        | undefined;
-
-      if (
-        departureAt !==
-        undefined
-      ) {
-        departureDate =
-          new Date(
-            departureAt,
-          );
-
-        if (
-          Number.isNaN(
-            departureDate.getTime(),
-          )
-        ) {
-          return res.status(400).json({
-            success: false,
-
-            message:
-              "Invalid departure date.",
-          });
-        }
-      }
-
-      if (
-        arrivalAt !==
-        undefined
-      ) {
-        arrivalDate =
-          new Date(
-            arrivalAt,
-          );
-
-        if (
-          Number.isNaN(
-            arrivalDate.getTime(),
-          )
-        ) {
-          return res.status(400).json({
-            success: false,
-
-            message:
-              "Invalid arrival date.",
-          });
-        }
-      }
-
-      /*
-       * =================================================
-       * FINAL DATE VALUES
-       * =================================================
-       */
-
-      const finalDeparture =
-        departureDate ??
-        existingFlight.departureAt;
-
-      const finalArrival =
-        arrivalDate ??
-        existingFlight.arrivalAt;
-
-      if (
-        finalArrival <=
-        finalDeparture
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          message:
-            "Arrival time must be after departure time.",
-        });
-      }
-
-      /*
-       * =================================================
-       * TOTAL SEATS
-       * =================================================
-       */
-
-      let newTotalSeats =
-        existingFlight.totalSeats;
-
-      if (
-        totalSeats !==
-        undefined
-      ) {
-        newTotalSeats =
-          Number(
-            totalSeats,
-          );
-
-        if (
-          !Number.isInteger(
-            newTotalSeats,
-          ) ||
-          newTotalSeats < 1
-        ) {
-          return res.status(400).json({
-            success: false,
-
-            message:
-              "Total seats must be at least 1.",
-          });
-        }
-      }
-
-      /*
-       * =================================================
-       * CALCULATE BOOKED SEATS
-       * =================================================
-       */
-
-      const bookedSeats =
-        Math.max(
-          0,
-
-          Number(
-            existingFlight
-              .totalSeats,
-          ) -
-            Number(
-              existingFlight
-                .availableSeats,
-            ),
-        );
-
-      /*
-       * =================================================
-       * PREVENT INVALID TOTAL SEATS
-       * =================================================
-       */
-
-      if (
-        newTotalSeats <
-        bookedSeats
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          message:
-            `Total seats cannot be less than ${bookedSeats}, because ${bookedSeats} seat(s) are already booked.`,
-        });
-      }
-
-      /*
-       * =================================================
-       * AVAILABLE SEATS
-       * =================================================
-       */
-
-      const newAvailableSeats =
-        newTotalSeats -
-        bookedSeats;
-
-      /*
-       * =================================================
-       * FARE
-       * =================================================
-       */
-
-      let newFare:
-        | number
-        | undefined;
-
-      if (
-        fare !== undefined
-      ) {
-        newFare =
-          Number(fare);
-
-        if (
-          !Number.isFinite(
-            newFare,
-          ) ||
-          newFare < 0
-        ) {
-          return res.status(400).json({
-            success: false,
-
-            message:
-              "Fare must be a valid non-negative number.",
-          });
-        }
-      }
-
-      /*
-       * =================================================
-       * UPDATE
-       * =================================================
-       */
-
-      const flight =
-        await prisma.flight.update({
-          where: {
-            id: flightId,
-          },
-
-          data: {
-            ...(airline !==
-              undefined && {
-              airline:
-                String(
-                  airline,
-                ).trim(),
-            }),
-
-            ...(flightNumber !==
-              undefined && {
-              flightNumber:
-                String(
-                  flightNumber,
-                ).trim(),
-            }),
-
-            ...(origin !==
-              undefined && {
-              origin:
-                String(
-                  origin,
-                ).trim(),
-            }),
-
-            ...(destination !==
-              undefined && {
-              destination:
-                String(
-                  destination,
-                ).trim(),
-            }),
-
-            ...(departureDate && {
-              departureAt:
-                departureDate,
-            }),
-
-            ...(arrivalDate && {
-              arrivalAt:
-                arrivalDate,
-            }),
-
-            ...(newFare !==
-              undefined && {
-              fare:
-                newFare,
-            }),
-
-            totalSeats:
-              newTotalSeats,
-
-            availableSeats:
-              newAvailableSeats,
-          },
-        });
-
-      return res.json({
-        success: true,
-
-        message:
-          "Flight updated successfully.",
-
-        flight: {
-          ...flight,
-
-          fare: Number(
-            flight.fare,
-          ),
-        },
-      });
-    } catch (error) {
-      console.error(
-        "UPDATE FLIGHT ERROR:",
-        error,
-      );
-
-      return res.status(500).json({
+    if (!existingFlight) {
+      return res.status(404).json({
         success: false,
 
-        message:
-          "Unable to update flight.",
+        message: "Flight not found.",
       });
     }
-  };
+
+    const {
+      airline,
+      flightNumber,
+      origin,
+      destination,
+      departureAt,
+      arrivalAt,
+      fare,
+      totalSeats,
+    } = req.body;
+
+    /*
+     * =================================================
+     * DATE VALIDATION
+     * =================================================
+     */
+
+    let departureDate: Date | undefined;
+
+    let arrivalDate: Date | undefined;
+
+    if (departureAt !== undefined) {
+      departureDate = new Date(departureAt);
+
+      if (Number.isNaN(departureDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+
+          message: "Invalid departure date.",
+        });
+      }
+    }
+
+    if (arrivalAt !== undefined) {
+      arrivalDate = new Date(arrivalAt);
+
+      if (Number.isNaN(arrivalDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+
+          message: "Invalid arrival date.",
+        });
+      }
+    }
+
+    /*
+     * =================================================
+     * FINAL DATE VALUES
+     * =================================================
+     */
+
+    const finalDeparture = departureDate ?? existingFlight.departureAt;
+
+    const finalArrival = arrivalDate ?? existingFlight.arrivalAt;
+
+    if (finalArrival <= finalDeparture) {
+      return res.status(400).json({
+        success: false,
+
+        message: "Arrival time must be after departure time.",
+      });
+    }
+
+    /*
+     * =================================================
+     * TOTAL SEATS
+     * =================================================
+     */
+
+    let newTotalSeats = existingFlight.totalSeats;
+
+    if (totalSeats !== undefined) {
+      newTotalSeats = Number(totalSeats);
+
+      if (!Number.isInteger(newTotalSeats) || newTotalSeats < 1) {
+        return res.status(400).json({
+          success: false,
+
+          message: "Total seats must be at least 1.",
+        });
+      }
+    }
+
+    /*
+     * =================================================
+     * CALCULATE BOOKED SEATS
+     * =================================================
+     */
+
+    const bookedSeats = Math.max(
+      0,
+
+      Number(existingFlight.totalSeats) - Number(existingFlight.availableSeats),
+    );
+
+    /*
+     * =================================================
+     * PREVENT INVALID TOTAL SEATS
+     * =================================================
+     */
+
+    if (newTotalSeats < bookedSeats) {
+      return res.status(400).json({
+        success: false,
+
+        message: `Total seats cannot be less than ${bookedSeats}, because ${bookedSeats} seat(s) are already booked.`,
+      });
+    }
+
+    /*
+     * =================================================
+     * AVAILABLE SEATS
+     * =================================================
+     */
+
+    const newAvailableSeats = newTotalSeats - bookedSeats;
+
+    /*
+     * =================================================
+     * FARE
+     * =================================================
+     */
+
+    let newFare: number | undefined;
+
+    if (fare !== undefined) {
+      newFare = Number(fare);
+
+      if (!Number.isFinite(newFare) || newFare < 0) {
+        return res.status(400).json({
+          success: false,
+
+          message: "Fare must be a valid non-negative number.",
+        });
+      }
+    }
+
+    /*
+     * =================================================
+     * UPDATE
+     * =================================================
+     */
+
+    const flight = await prisma.flight.update({
+      where: {
+        id: flightId,
+      },
+
+      data: {
+        ...(airline !== undefined && {
+          airline: String(airline).trim(),
+        }),
+
+        ...(flightNumber !== undefined && {
+          flightNumber: String(flightNumber).trim(),
+        }),
+
+        ...(origin !== undefined && {
+          origin: String(origin).trim(),
+        }),
+
+        ...(destination !== undefined && {
+          destination: String(destination).trim(),
+        }),
+
+        ...(departureDate && {
+          departureAt: departureDate,
+        }),
+
+        ...(arrivalDate && {
+          arrivalAt: arrivalDate,
+        }),
+
+        ...(newFare !== undefined && {
+          fare: newFare,
+        }),
+
+        totalSeats: newTotalSeats,
+
+        availableSeats: newAvailableSeats,
+      },
+    });
+
+    return res.json({
+      success: true,
+
+      message: "Flight updated successfully.",
+
+      flight: {
+        ...flight,
+
+        fare: Number(flight.fare),
+      },
+    });
+  } catch (error) {
+    console.error("UPDATE FLIGHT ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+
+      message: "Unable to update flight.",
+    });
+  }
+};
 
 /*
  * =====================================================
@@ -1632,107 +1261,88 @@ export const updateFlight =
  * =====================================================
  */
 
-export const deleteFlight =
-  async (
-    req: Request,
-    res: Response,
-  ) => {
-    try {
-      const { flightId } =
-        req.params;
+export const deleteFlight = async (req: Request, res: Response) => {
+  try {
+    const { flightId } = req.params;
 
-      /*
-       * =================================================
-       * CHECK FLIGHT
-       * =================================================
-       */
+    /*
+     * =================================================
+     * CHECK FLIGHT
+     * =================================================
+     */
 
-      const flight =
-        await prisma.flight.findUnique({
-          where: {
-            id: flightId,
-          },
-        });
+    const flight = await prisma.flight.findUnique({
+      where: {
+        id: flightId,
+      },
+    });
 
-      if (!flight) {
-        return res.status(404).json({
-          success: false,
-
-          message:
-            "Flight not found.",
-        });
-      }
-
-      /*
-       * =================================================
-       * CHECK ACTIVE BOOKINGS
-       * =================================================
-       *
-       * Your enum has:
-       *
-       * PENDING
-       * CONFIRMED
-       * CANCELLED
-       * PAYMENT_FAILED
-       * REFUNDED
-       *
-       * =================================================
-       */
-
-      const activeBookings =
-        await prisma.booking.count({
-          where: {
-            flightId,
-
-            status: {
-              in: [
-                "PENDING",
-                "CONFIRMED",
-              ],
-            },
-          },
-        });
-
-      if (
-        activeBookings > 0
-      ) {
-        return res.status(400).json({
-          success: false,
-
-          message:
-            "Cannot delete a flight with active bookings.",
-        });
-      }
-
-      /*
-       * =================================================
-       * DELETE
-       * =================================================
-       */
-
-      await prisma.flight.delete({
-        where: {
-          id: flightId,
-        },
-      });
-
-      return res.json({
-        success: true,
-
-        message:
-          "Flight deleted successfully.",
-      });
-    } catch (error) {
-      console.error(
-        "DELETE FLIGHT ERROR:",
-        error,
-      );
-
-      return res.status(500).json({
+    if (!flight) {
+      return res.status(404).json({
         success: false,
 
-        message:
-          "Unable to delete flight.",
+        message: "Flight not found.",
       });
     }
-  };
+
+    /*
+     * =================================================
+     * CHECK ACTIVE BOOKINGS
+     * =================================================
+     *
+     * Your enum has:
+     *
+     * PENDING
+     * CONFIRMED
+     * CANCELLED
+     * PAYMENT_FAILED
+     * REFUNDED
+     *
+     * =================================================
+     */
+
+    const activeBookings = await prisma.booking.count({
+      where: {
+        flightId,
+
+        status: {
+          in: ["PENDING", "CONFIRMED"],
+        },
+      },
+    });
+
+    if (activeBookings > 0) {
+      return res.status(400).json({
+        success: false,
+
+        message: "Cannot delete a flight with active bookings.",
+      });
+    }
+
+    /*
+     * =================================================
+     * DELETE
+     * =================================================
+     */
+
+    await prisma.flight.delete({
+      where: {
+        id: flightId,
+      },
+    });
+
+    return res.json({
+      success: true,
+
+      message: "Flight deleted successfully.",
+    });
+  } catch (error) {
+    console.error("DELETE FLIGHT ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+
+      message: "Unable to delete flight.",
+    });
+  }
+};

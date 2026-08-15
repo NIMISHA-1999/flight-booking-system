@@ -6,8 +6,6 @@ import {
   useState,
 } from "react";
 
-import Link from "next/link";
-
 import {
   Search,
   Ticket,
@@ -35,22 +33,6 @@ import {
  * TYPES
  * =====================================================
  */
-
-type BookingStatus =
-  | "PENDING"
-  | "CONFIRMED"
-  | "CANCELLED"
-  | "PAYMENT_FAILED"
-  | "REFUNDED"
-  | "FAILED";
-
-type PaymentStatus =
-  | "PENDING"
-  | "SUCCEEDED"
-  | "FAILED"
-  | "REFUNDED"
-  | "PARTIALLY_REFUNDED"
-  | string;
 
 interface Pagination {
   page: number;
@@ -105,6 +87,17 @@ export default function AdminBookingsPage() {
 
   const [mobileMenuOpen, setMobileMenuOpen] =
     useState<boolean>(false);
+
+  /*
+   * =====================================================
+   * VIEW STATE
+   * =====================================================
+   */
+
+  const [
+    viewModalBooking,
+    setViewModalBooking,
+  ] = useState<AdminBooking | null>(null);
 
   /*
    * =====================================================
@@ -174,7 +167,6 @@ export default function AdminBookingsPage() {
         );
 
         setBookings([]);
-
         setPagination(null);
       } finally {
         setLoading(false);
@@ -196,7 +188,7 @@ export default function AdminBookingsPage() {
    */
 
   useEffect(() => {
-    loadBookings(page);
+    void loadBookings(page);
   }, [page, loadBookings]);
 
   /*
@@ -319,6 +311,30 @@ export default function AdminBookingsPage() {
 
     window.location.href =
       "/admin/login";
+  };
+
+  /*
+   * =====================================================
+   * OPEN VIEW MODAL
+   * =====================================================
+   */
+
+  const handleOpenViewModal = (
+    booking: AdminBooking,
+  ) => {
+    setError("");
+    setSuccessMessage("");
+    setViewModalBooking(booking);
+  };
+
+  /*
+   * =====================================================
+   * CLOSE VIEW MODAL
+   * =====================================================
+   */
+
+  const handleCloseViewModal = () => {
+    setViewModalBooking(null);
   };
 
   /*
@@ -661,9 +677,7 @@ export default function AdminBookingsPage() {
 
           </div>
 
-          {/* =================================================
-              SUCCESS MESSAGE
-          ================================================= */}
+          {/* SUCCESS */}
 
           {successMessage && (
             <div className="mb-6 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
@@ -680,9 +694,7 @@ export default function AdminBookingsPage() {
             </div>
           )}
 
-          {/* =================================================
-              ERROR MESSAGE
-          ================================================= */}
+          {/* ERROR */}
 
           {error && (
             <div className="mb-6 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3">
@@ -715,15 +727,11 @@ export default function AdminBookingsPage() {
             </div>
           )}
 
-          {/* =================================================
-              FILTERS
-          ================================================= */}
+          {/* FILTERS */}
 
           <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-
-              {/* STATUS */}
 
               <select
                 value={status}
@@ -768,8 +776,6 @@ export default function AdminBookingsPage() {
 
               </select>
 
-              {/* DATE */}
-
               <input
                 type="date"
                 value={date}
@@ -783,8 +789,6 @@ export default function AdminBookingsPage() {
                 }
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
               />
-
-              {/* ORIGIN */}
 
               <input
                 type="text"
@@ -804,8 +808,6 @@ export default function AdminBookingsPage() {
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black placeholder:text-slate-400 caret-black outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
               />
 
-              {/* DESTINATION */}
-
               <input
                 type="text"
                 value={destination}
@@ -824,8 +826,6 @@ export default function AdminBookingsPage() {
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black placeholder:text-slate-400 caret-black outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
               />
 
-              {/* BUTTONS */}
-
               <div className="flex gap-2">
 
                 <button
@@ -836,11 +836,8 @@ export default function AdminBookingsPage() {
                   disabled={loading}
                   className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-sky-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-
                   <Search size={17} />
-
                   Filter
-
                 </button>
 
                 <button
@@ -852,9 +849,7 @@ export default function AdminBookingsPage() {
                   aria-label="Clear filters"
                   className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-red-500"
                 >
-
                   <X size={18} />
-
                 </button>
 
               </div>
@@ -863,9 +858,7 @@ export default function AdminBookingsPage() {
 
           </div>
 
-          {/* =================================================
-              RESULTS COUNT
-          ================================================= */}
+          {/* RESULTS COUNT */}
 
           <div className="mb-3">
 
@@ -879,9 +872,7 @@ export default function AdminBookingsPage() {
 
           </div>
 
-          {/* =================================================
-              BOOKINGS TABLE
-          ================================================= */}
+          {/* BOOKINGS TABLE */}
 
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
 
@@ -927,10 +918,6 @@ export default function AdminBookingsPage() {
 
                 <tbody className="divide-y divide-slate-100">
 
-                  {/* =================================================
-                      LOADING
-                  ================================================= */}
-
                   {loading ? (
 
                     <tr>
@@ -953,12 +940,7 @@ export default function AdminBookingsPage() {
 
                     </tr>
 
-                  ) : bookings.length ===
-                    0 ? (
-
-                    /* =================================================
-                        EMPTY
-                    ================================================= */
+                  ) : bookings.length === 0 ? (
 
                     <tr>
 
@@ -970,11 +952,7 @@ export default function AdminBookingsPage() {
                         <div className="flex flex-col items-center">
 
                           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-
-                            <Ticket
-                              size={24}
-                            />
-
+                            <Ticket size={24} />
                           </div>
 
                           <p className="mt-4 font-semibold text-slate-700">
@@ -993,14 +971,8 @@ export default function AdminBookingsPage() {
 
                   ) : (
 
-                    /* =================================================
-                        BOOKINGS
-                    ================================================= */
-
                     bookings.map(
-                      (
-                        booking,
-                      ) => (
+                      (booking) => (
 
                         <tr
                           key={
@@ -1039,8 +1011,7 @@ export default function AdminBookingsPage() {
 
                             <p className="mt-1 text-xs text-slate-500">
                               {
-                                booking
-                                  .user
+                                booking.user
                                   ?.email ||
                                 "-"
                               }
@@ -1091,13 +1062,11 @@ export default function AdminBookingsPage() {
                             </p>
 
                             <p className="mt-1 text-xs text-slate-400">
-
                               {formatDateTime(
                                 booking
                                   .flight
                                   .departureAt,
                               )}
-
                             </p>
 
                           </td>
@@ -1107,14 +1076,11 @@ export default function AdminBookingsPage() {
                           <td className="px-5 py-4">
 
                             <p className="font-bold text-slate-900">
-
                               {formatCurrency(
                                 booking.totalAmount,
-                                booking
-                                  .payment
+                                booking.payment
                                   ?.currency,
                               )}
-
                             </p>
 
                           </td>
@@ -1167,7 +1133,7 @@ export default function AdminBookingsPage() {
 
                           </td>
 
-                          {/* BOOKING STATUS */}
+                          {/* STATUS */}
 
                           <td className="px-5 py-4">
 
@@ -1179,7 +1145,7 @@ export default function AdminBookingsPage() {
 
                           </td>
 
-                          {/* ACTIONS */}
+                          {/* ACTION */}
 
                           <td className="px-5 py-4">
 
@@ -1187,18 +1153,21 @@ export default function AdminBookingsPage() {
 
                               {/* VIEW */}
 
-                              <Link
-                                href={`/admin/bookings/${booking.id}`}
+                              <button
+                                type="button"
                                 title="View booking details"
                                 aria-label="View booking details"
+                                onClick={() =>
+                                  handleOpenViewModal(
+                                    booking,
+                                  )
+                                }
                                 className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-sky-50 hover:text-sky-600"
                               >
-
                                 <Eye
                                   size={18}
                                 />
-
-                              </Link>
+                              </button>
 
                               {/* CANCEL */}
 
@@ -1226,22 +1195,14 @@ export default function AdminBookingsPage() {
 
                                     {cancellingBookingId ===
                                     booking.id ? (
-
                                       <RefreshCw
-                                        size={
-                                          18
-                                        }
+                                        size={18}
                                         className="animate-spin"
                                       />
-
                                     ) : (
-
                                       <CircleX
-                                        size={
-                                          18
-                                        }
+                                        size={18}
                                       />
-
                                     )}
 
                                   </button>
@@ -1265,9 +1226,7 @@ export default function AdminBookingsPage() {
 
             </div>
 
-            {/* =================================================
-                PAGINATION
-            ================================================= */}
+            {/* PAGINATION */}
 
             {pagination &&
               pagination.totalPages >
@@ -1294,37 +1253,30 @@ export default function AdminBookingsPage() {
                     </span>
 
                     <span className="ml-2 text-slate-400">
-
                       (
                       {
                         pagination.total
                       }{" "}
                       total)
-
                     </span>
 
                   </p>
 
                   <div className="flex gap-2">
 
-                    {/* PREVIOUS */}
-
                     <button
                       type="button"
                       disabled={
                         pagination.page <=
-                        1 ||
+                          1 ||
                         loading
                       }
                       onClick={() =>
                         setPage(
-                          (
-                            current,
-                          ) =>
+                          (current) =>
                             Math.max(
                               1,
-                              current -
-                                1,
+                              current - 1,
                             ),
                         )
                       }
@@ -1332,8 +1284,6 @@ export default function AdminBookingsPage() {
                     >
                       Previous
                     </button>
-
-                    {/* NEXT */}
 
                     <button
                       type="button"
@@ -1344,13 +1294,10 @@ export default function AdminBookingsPage() {
                       }
                       onClick={() =>
                         setPage(
-                          (
-                            current,
-                          ) =>
+                          (current) =>
                             Math.min(
                               pagination.totalPages,
-                              current +
-                                1,
+                              current + 1,
                             ),
                         )
                       }
@@ -1372,6 +1319,425 @@ export default function AdminBookingsPage() {
       </div>
 
       {/* =====================================================
+          VIEW BOOKING MODAL
+      ===================================================== */}
+
+      {viewModalBooking && (
+
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (
+              event.target ===
+              event.currentTarget
+            ) {
+              handleCloseViewModal();
+            }
+          }}
+        >
+
+          <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+
+            {/* HEADER */}
+
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+
+              <div className="flex items-center gap-3">
+
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sky-50 text-sky-600">
+                  <Eye size={22} />
+                </div>
+
+                <div>
+
+                  <h2 className="text-lg font-bold text-slate-900">
+                    Booking Details
+                  </h2>
+
+                  <p className="text-sm text-slate-500">
+                    {
+                      viewModalBooking.bookingReference
+                    }
+                  </p>
+
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  handleCloseViewModal
+                }
+                title="Close"
+                aria-label="Close"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X size={20} />
+              </button>
+
+            </div>
+
+            {/* CONTENT */}
+
+            <div className="space-y-5 px-6 py-6">
+
+              {/* BOOKING */}
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+
+                <div className="mb-4 flex items-center justify-between">
+
+                  <h3 className="text-sm font-bold text-slate-800">
+                    Booking Information
+                  </h3>
+
+                  <StatusBadge
+                    status={
+                      viewModalBooking.status
+                    }
+                  />
+
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+                  <div>
+                    <p className="text-xs text-slate-400">
+                      Booking Reference
+                    </p>
+
+                    <p className="mt-1 font-bold text-slate-900">
+                      {
+                        viewModalBooking.bookingReference
+                      }
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-slate-400">
+                      Created
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                      {formatDateTime(
+                        viewModalBooking.createdAt,
+                      )}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-slate-400">
+                      Total Amount
+                    </p>
+
+                    <p className="mt-1 text-sm font-bold text-slate-900">
+                      {formatCurrency(
+                        viewModalBooking.totalAmount,
+                        viewModalBooking.payment
+                          ?.currency,
+                      )}
+                    </p>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* CUSTOMER */}
+
+              <div className="rounded-xl border border-slate-200 bg-white p-5">
+
+                <h3 className="mb-4 text-sm font-bold text-slate-800">
+                  Customer Information
+                </h3>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+
+                  <div>
+                    <p className="text-xs text-slate-400">
+                      Customer Name
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                      {getCustomerName(
+                        viewModalBooking,
+                      )}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-slate-400">
+                      Email
+                    </p>
+
+                    <p className="mt-1 break-all text-sm font-semibold text-slate-800">
+                      {
+                        viewModalBooking.user
+                          ?.email || "-"
+                      }
+                    </p>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* FLIGHT */}
+
+              <div className="rounded-xl border border-slate-200 bg-white p-5">
+
+                <h3 className="mb-4 text-sm font-bold text-slate-800">
+                  Flight Information
+                </h3>
+
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+                  <div>
+                    <p className="text-xs text-slate-400">
+                      Flight Number
+                    </p>
+
+                    <p className="mt-1 text-sm font-bold text-slate-900">
+                      {
+                        viewModalBooking
+                          .flight
+                          .flightNumber
+                      }
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-slate-400">
+                      Airline
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                      {
+                        viewModalBooking
+                          .flight
+                          .airline
+                      }
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-slate-400">
+                      Route
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                      {
+                        viewModalBooking
+                          .flight
+                          .origin
+                      }
+                      {" → "}
+                      {
+                        viewModalBooking
+                          .flight
+                          .destination
+                      }
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-slate-400">
+                      Departure
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-800">
+                      {formatDateTime(
+                        viewModalBooking
+                          .flight
+                          .departureAt,
+                      )}
+                    </p>
+                  </div>
+
+                  {"arrivalAt" in
+                    viewModalBooking.flight &&
+                    viewModalBooking
+                      .flight
+                      .arrivalAt && (
+
+                      <div>
+                        <p className="text-xs text-slate-400">
+                          Arrival
+                        </p>
+
+                        <p className="mt-1 text-sm font-semibold text-slate-800">
+                          {formatDateTime(
+                            (
+                              viewModalBooking
+                                .flight as typeof viewModalBooking.flight & {
+                                arrivalAt?: string;
+                              }
+                            ).arrivalAt,
+                          )}
+                        </p>
+                      </div>
+
+                    )}
+
+                </div>
+
+              </div>
+
+              {/* PAYMENT */}
+
+              <div className="rounded-xl border border-slate-200 bg-white p-5">
+
+                <div className="mb-4 flex items-center gap-2">
+
+                  <CreditCard
+                    size={18}
+                    className="text-sky-500"
+                  />
+
+                  <h3 className="text-sm font-bold text-slate-800">
+                    Payment Information
+                  </h3>
+
+                </div>
+
+                {viewModalBooking.payment ? (
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+
+                    <div>
+                      <p className="text-xs text-slate-400">
+                        Payment Status
+                      </p>
+
+                      <div className="mt-1">
+                        <PaymentBadge
+                          status={
+                            viewModalBooking
+                              .payment
+                              .status
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">
+                        Payment Amount
+                      </p>
+
+                      <p className="mt-1 text-sm font-bold text-slate-800">
+                        {formatCurrency(
+                          viewModalBooking
+                            .payment
+                            .amount,
+                          viewModalBooking
+                            .payment
+                            .currency,
+                        )}
+                      </p>
+                    </div>
+
+                    {viewModalBooking
+                      .payment
+                      .paidAt && (
+
+                      <div>
+                        <p className="text-xs text-slate-400">
+                          Paid At
+                        </p>
+
+                        <p className="mt-1 text-sm font-semibold text-slate-800">
+                          {formatDateTime(
+                            viewModalBooking
+                              .payment
+                              .paidAt,
+                          )}
+                        </p>
+                      </div>
+
+                    )}
+
+                    {viewModalBooking
+                      .payment
+                      .refundedAt && (
+
+                      <div>
+                        <p className="text-xs text-slate-400">
+                          Refunded At
+                        </p>
+
+                        <p className="mt-1 text-sm font-semibold text-purple-600">
+                          {formatDateTime(
+                            viewModalBooking
+                              .payment
+                              .refundedAt,
+                          )}
+                        </p>
+                      </div>
+
+                    )}
+
+                    {viewModalBooking
+                      .payment
+                      .stripePaymentIntentId && (
+
+                      <div className="sm:col-span-2">
+
+                        <p className="text-xs text-slate-400">
+                          Stripe Payment Intent
+                        </p>
+
+                        <p className="mt-1 break-all rounded-lg bg-slate-50 p-3 font-mono text-xs text-slate-600">
+                          {
+                            viewModalBooking
+                              .payment
+                              .stripePaymentIntentId
+                          }
+                        </p>
+
+                      </div>
+
+                    )}
+
+                  </div>
+
+                ) : (
+
+                  <p className="text-sm text-slate-500">
+                    No payment record was
+                    found for this booking.
+                  </p>
+
+                )}
+
+              </div>
+
+            </div>
+
+            {/* FOOTER */}
+
+            <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-6 py-4">
+
+              <button
+                type="button"
+                onClick={
+                  handleCloseViewModal
+                }
+                className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Close
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {/* =====================================================
           CANCEL CONFIRMATION MODAL
       ===================================================== */}
 
@@ -1391,15 +1757,13 @@ export default function AdminBookingsPage() {
 
           <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
 
-            {/* MODAL HEADER */}
+            {/* HEADER */}
 
             <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-5">
 
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-50 text-red-600">
 
-                <CircleX
-                  size={22}
-                />
+                <CircleX size={22} />
 
               </div>
 
@@ -1417,7 +1781,7 @@ export default function AdminBookingsPage() {
 
             </div>
 
-            {/* MODAL CONTENT */}
+            {/* CONTENT */}
 
             <div className="px-6 py-5">
 
@@ -1434,16 +1798,13 @@ export default function AdminBookingsPage() {
 
               </p>
 
-              {/* BOOKING SUMMARY */}
+              {/* SUMMARY */}
 
               <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
 
-                  {/* CUSTOMER */}
-
                   <div>
-
                     <p className="text-xs text-slate-400">
                       Customer
                     </p>
@@ -1453,13 +1814,9 @@ export default function AdminBookingsPage() {
                         cancelModalBooking,
                       )}
                     </p>
-
                   </div>
 
-                  {/* FLIGHT */}
-
                   <div>
-
                     <p className="text-xs text-slate-400">
                       Flight
                     </p>
@@ -1471,65 +1828,48 @@ export default function AdminBookingsPage() {
                           .flightNumber
                       }
                     </p>
-
                   </div>
 
-                  {/* ROUTE */}
-
                   <div>
-
                     <p className="text-xs text-slate-400">
                       Route
                     </p>
 
                     <p className="mt-1 font-semibold text-slate-800">
-
                       {
                         cancelModalBooking
                           .flight
                           .origin
                       }
-
                       {" → "}
-
                       {
                         cancelModalBooking
                           .flight
                           .destination
                       }
-
                     </p>
-
                   </div>
 
-                  {/* AMOUNT */}
-
                   <div>
-
                     <p className="text-xs text-slate-400">
                       Amount
                     </p>
 
                     <p className="mt-1 font-semibold text-slate-800">
-
                       {formatCurrency(
                         cancelModalBooking.totalAmount,
                         cancelModalBooking
                           .payment
                           ?.currency,
                       )}
-
                     </p>
-
                   </div>
 
                 </div>
 
               </div>
 
-              {/* =================================================
-                  PAYMENT INFORMATION
-              ================================================= */}
+              {/* PAYMENT INFORMATION */}
 
               {cancelModalBooking.payment ? (
 
@@ -1557,6 +1897,7 @@ export default function AdminBookingsPage() {
                       </p>
 
                       <div className="mt-1">
+
                         <PaymentBadge
                           status={
                             cancelModalBooking
@@ -1564,6 +1905,7 @@ export default function AdminBookingsPage() {
                               .status
                           }
                         />
+
                       </div>
 
                     </div>
@@ -1575,7 +1917,6 @@ export default function AdminBookingsPage() {
                       </p>
 
                       <p className="mt-1 text-sm font-semibold text-slate-800">
-
                         {formatCurrency(
                           cancelModalBooking
                             .payment
@@ -1584,7 +1925,6 @@ export default function AdminBookingsPage() {
                             .payment
                             .currency,
                         )}
-
                       </p>
 
                     </div>
@@ -1620,19 +1960,15 @@ export default function AdminBookingsPage() {
                 <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
 
                   <p className="text-xs leading-5 text-slate-600">
-
                     No payment record was found
                     for this booking.
-
                   </p>
 
                 </div>
 
               )}
 
-              {/* =================================================
-                  SUCCESSFUL PAYMENT / REFUND WARNING
-              ================================================= */}
+              {/* REFUND WARNING */}
 
               {hasSuccessfulPayment(
                 cancelModalBooking,
@@ -1652,13 +1988,11 @@ export default function AdminBookingsPage() {
                     </p>
 
                     <p className="mt-1 text-xs leading-5 text-amber-700">
-
                       This booking has a successful
                       Stripe payment. Cancelling the
                       booking will attempt to refund the
                       successful payment and release the
                       reserved flight seats.
-
                     </p>
 
                   </div>
@@ -1667,12 +2001,9 @@ export default function AdminBookingsPage() {
 
               )}
 
-              {/* =================================================
-                  FAILED / PENDING PAYMENT
-              ================================================= */}
+              {/* NON-SUCCESSFUL PAYMENT */}
 
-              {cancelModalBooking
-                .payment &&
+              {cancelModalBooking.payment &&
                 !hasSuccessfulPayment(
                   cancelModalBooking,
                 ) &&
@@ -1683,12 +2014,10 @@ export default function AdminBookingsPage() {
                   <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
 
                     <p className="text-xs leading-5 text-slate-600">
-
                       The payment is not marked as
                       successful. The booking will be
                       cancelled and the reserved flight
                       seats will be released.
-
                     </p>
 
                   </div>
@@ -1697,11 +2026,9 @@ export default function AdminBookingsPage() {
 
             </div>
 
-            {/* MODAL FOOTER */}
+            {/* FOOTER */}
 
             <div className="flex flex-col-reverse gap-3 border-t border-slate-100 px-6 py-4 sm:flex-row sm:justify-end">
-
-              {/* KEEP BOOKING */}
 
               <button
                 type="button"
@@ -1716,8 +2043,6 @@ export default function AdminBookingsPage() {
               >
                 Keep Booking
               </button>
-
-              {/* CONFIRM CANCEL */}
 
               <button
                 type="button"

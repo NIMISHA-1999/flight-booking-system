@@ -20,6 +20,9 @@ import {
   createFlight,
   updateFlight,
   deleteFlight,
+  getAllUsers,
+  getUserById,
+  deleteUser,
 } from "../controllers/admin.controller";
 
 const router =
