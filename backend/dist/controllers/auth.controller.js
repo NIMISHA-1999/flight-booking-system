@@ -5,20 +5,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const auth_service_1 = __importDefault(require("../services/auth.service"));
 class AuthController {
+    /**
+     * =====================================================
+     * REGISTER
+     * =====================================================
+     */
     async register(req, res) {
         try {
             console.log("REGISTER BODY:", req.body);
-            const { firstName, lastName, email, password } = req.body ?? {};
-            if (!firstName || !lastName || !email || !password) {
+            const { firstName, lastName, email, password, } = req.body ?? {};
+            if (!firstName?.trim() ||
+                !lastName?.trim() ||
+                !email?.trim() ||
+                !password) {
                 return res.status(400).json({
                     success: false,
                     message: "First name, last name, email and password are required",
                 });
             }
             const result = await auth_service_1.default.register({
-                firstName,
-                lastName,
-                email,
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                email: email.trim().toLowerCase(),
                 password,
             });
             return res.status(201).json({
@@ -37,18 +45,23 @@ class AuthController {
             });
         }
     }
+    /**
+     * =====================================================
+     * LOGIN
+     * =====================================================
+     */
     async login(req, res) {
         try {
             console.log("LOGIN BODY:", req.body);
-            const { email, password } = req.body ?? {};
-            if (!email || !password) {
+            const { email, password, } = req.body ?? {};
+            if (!email?.trim() || !password) {
                 return res.status(400).json({
                     success: false,
                     message: "Email and password are required",
                 });
             }
             const result = await auth_service_1.default.login({
-                email,
+                email: email.trim().toLowerCase(),
                 password,
             });
             return res.status(200).json({
@@ -67,10 +80,16 @@ class AuthController {
             });
         }
     }
+    /**
+     * =====================================================
+     * REFRESH ACCESS TOKEN
+     * =====================================================
+     */
     async refresh(req, res) {
         try {
-            const { refreshToken } = req.body ?? {};
-            if (!refreshToken) {
+            const { refreshToken, } = req.body ?? {};
+            if (!refreshToken ||
+                typeof refreshToken !== "string") {
                 return res.status(400).json({
                     success: false,
                     message: "Refresh token is required",
@@ -93,10 +112,16 @@ class AuthController {
             });
         }
     }
+    /**
+     * =====================================================
+     * LOGOUT
+     * =====================================================
+     */
     async logout(req, res) {
         try {
-            const { refreshToken } = req.body ?? {};
-            if (!refreshToken) {
+            const { refreshToken, } = req.body ?? {};
+            if (!refreshToken ||
+                typeof refreshToken !== "string") {
                 return res.status(400).json({
                     success: false,
                     message: "Refresh token is required",

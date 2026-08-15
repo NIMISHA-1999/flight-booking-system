@@ -2,13 +2,28 @@ import { Request, Response } from "express";
 import authService from "../services/auth.service";
 
 class AuthController {
+  /**
+   * =====================================================
+   * REGISTER
+   * =====================================================
+   */
   async register(req: Request, res: Response) {
     try {
       console.log("REGISTER BODY:", req.body);
 
-      const { firstName, lastName, email, password } = req.body ?? {};
+      const {
+        firstName,
+        lastName,
+        email,
+        password,
+      } = req.body ?? {};
 
-      if (!firstName || !lastName || !email || !password) {
+      if (
+        !firstName?.trim() ||
+        !lastName?.trim() ||
+        !email?.trim() ||
+        !password
+      ) {
         return res.status(400).json({
           success: false,
           message:
@@ -17,9 +32,9 @@ class AuthController {
       }
 
       const result = await authService.register({
-        firstName,
-        lastName,
-        email,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
 
@@ -41,13 +56,21 @@ class AuthController {
     }
   }
 
+  /**
+   * =====================================================
+   * LOGIN
+   * =====================================================
+   */
   async login(req: Request, res: Response) {
     try {
       console.log("LOGIN BODY:", req.body);
 
-      const { email, password } = req.body ?? {};
+      const {
+        email,
+        password,
+      } = req.body ?? {};
 
-      if (!email || !password) {
+      if (!email?.trim() || !password) {
         return res.status(400).json({
           success: false,
           message: "Email and password are required",
@@ -55,7 +78,7 @@ class AuthController {
       }
 
       const result = await authService.login({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
 
@@ -77,18 +100,31 @@ class AuthController {
     }
   }
 
+  /**
+   * =====================================================
+   * REFRESH ACCESS TOKEN
+   * =====================================================
+   */
   async refresh(req: Request, res: Response) {
     try {
-      const { refreshToken } = req.body ?? {};
+      const {
+        refreshToken,
+      } = req.body ?? {};
 
-      if (!refreshToken) {
+      if (
+        !refreshToken ||
+        typeof refreshToken !== "string"
+      ) {
         return res.status(400).json({
           success: false,
           message: "Refresh token is required",
         });
       }
 
-      const result = await authService.refresh(refreshToken);
+      const result =
+        await authService.refresh(
+          refreshToken,
+        );
 
       return res.status(200).json({
         success: true,
@@ -108,18 +144,30 @@ class AuthController {
     }
   }
 
+  /**
+   * =====================================================
+   * LOGOUT
+   * =====================================================
+   */
   async logout(req: Request, res: Response) {
     try {
-      const { refreshToken } = req.body ?? {};
+      const {
+        refreshToken,
+      } = req.body ?? {};
 
-      if (!refreshToken) {
+      if (
+        !refreshToken ||
+        typeof refreshToken !== "string"
+      ) {
         return res.status(400).json({
           success: false,
           message: "Refresh token is required",
         });
       }
 
-      await authService.logout(refreshToken);
+      await authService.logout(
+        refreshToken,
+      );
 
       return res.status(200).json({
         success: true,

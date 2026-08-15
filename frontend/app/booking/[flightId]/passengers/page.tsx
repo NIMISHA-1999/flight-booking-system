@@ -1,11 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  useParams,
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import {
   ArrowLeft,
@@ -20,10 +16,9 @@ import {
 
 import { useEffect, useState } from "react";
 
-import {
-  getFlightById,
-  type Flight,
-} from "@/services/flight.service";
+import { getFlightById, type Flight } from "@/services/flight.service";
+
+import { createBooking, type PassengerData } from "@/services/booking.service";
 
 import PassengerForm, {
   type PassengerFormData,
@@ -50,31 +45,25 @@ export default function PassengerPage() {
    */
   const passengerCount = Math.max(
     1,
-    Number(searchParams.get("passengers")) || 1
+    Number(searchParams.get("passengers")) || 1,
   );
 
   /*
    * Flight
    */
-  const [flight, setFlight] = useState<Flight | null>(
-    null
-  );
+  const [flight, setFlight] = useState<Flight | null>(null);
 
   const [loading, setLoading] = useState(true);
 
   /*
    * Passenger data
    */
-  const [passengers, setPassengers] = useState<
-    PassengerFormData[]
-  >([]);
+  const [passengers, setPassengers] = useState<PassengerFormData[]>([]);
 
   /*
    * Validation errors
    */
-  const [errors, setErrors] = useState<
-    Record<string, string>
-  >({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   /*
    * Submit state
@@ -116,10 +105,7 @@ export default function PassengerPage() {
 
   useEffect(() => {
     setPassengers(
-      Array.from(
-        { length: passengerCount },
-        () => createEmptyPassenger()
-      )
+      Array.from({ length: passengerCount }, () => createEmptyPassenger()),
     );
   }, [passengerCount]);
 
@@ -132,20 +118,17 @@ export default function PassengerPage() {
   const updatePassenger = (
     index: number,
     field: keyof PassengerFormData,
-    value: string
+    value: string,
   ) => {
     setPassengers((current) =>
       current.map((passenger, passengerIndex) =>
         passengerIndex === index
           ? {
               ...passenger,
-              [field]:
-                field === "passportNumber"
-                  ? value.toUpperCase()
-                  : value,
+              [field]: field === "passportNumber" ? value.toUpperCase() : value,
             }
-          : passenger
-      )
+          : passenger,
+      ),
     );
 
     /*
@@ -176,62 +159,46 @@ export default function PassengerPage() {
        * Full name
        */
       if (!passenger.fullName.trim()) {
-        newErrors[`${index}.fullName`] =
-          "Full name is required.";
+        newErrors[`${index}.fullName`] = "Full name is required.";
       }
 
       /*
        * Date of birth
        */
       if (!passenger.dateOfBirth) {
-        newErrors[`${index}.dateOfBirth`] =
-          "Date of birth is required.";
+        newErrors[`${index}.dateOfBirth`] = "Date of birth is required.";
       }
 
       /*
        * Nationality
        */
       if (!passenger.nationality.trim()) {
-        newErrors[`${index}.nationality`] =
-          "Nationality is required.";
+        newErrors[`${index}.nationality`] = "Nationality is required.";
       }
 
       /*
        * Passport
        */
       if (!passenger.passportNumber.trim()) {
-        newErrors[`${index}.passportNumber`] =
-          "Passport number is required.";
+        newErrors[`${index}.passportNumber`] = "Passport number is required.";
       }
 
       /*
        * Email
        */
       if (!passenger.email.trim()) {
-        newErrors[`${index}.email`] =
-          "Email address is required.";
-      } else if (
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-          passenger.email
-        )
-      ) {
-        newErrors[`${index}.email`] =
-          "Enter a valid email address.";
+        newErrors[`${index}.email`] = "Email address is required.";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(passenger.email)) {
+        newErrors[`${index}.email`] = "Enter a valid email address.";
       }
 
       /*
        * Contact number
        */
       if (!passenger.contactNumber.trim()) {
-        newErrors[`${index}.contactNumber`] =
-          "Contact number is required.";
-      } else if (
-        !/^[+]?[0-9\s-]{7,15}$/.test(
-          passenger.contactNumber
-        )
-      ) {
-        newErrors[`${index}.contactNumber`] =
-          "Enter a valid contact number.";
+        newErrors[`${index}.contactNumber`] = "Contact number is required.";
+      } else if (!/^[+]?[0-9\s-]{7,15}$/.test(passenger.contactNumber)) {
+        newErrors[`${index}.contactNumber`] = "Enter a valid contact number.";
       }
     });
 
@@ -247,58 +214,41 @@ export default function PassengerPage() {
    */
 
   const handleContinue = async () => {
-    const isValid = validatePassengers();
+  if (!validatePassengers()) {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
 
-    if (!isValid) {
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
+    return;
+  }
 
-      return;
-    }
+  try {
+    setSubmitting(true);
 
-    try {
-      setSubmitting(true);
+    const response = await createBooking({
+      flightId,
+      passengers,
+    });
 
-      /*
-       * For now we are logging passenger data.
-       *
-       * Later replace this with:
-       *
-       * POST /api/bookings
-       *
-       * Example:
-       *
-       * const response = await createBooking({
-       *   flightId,
-       *   passengers,
-       * });
-       *
-       * router.push(response.checkoutUrl);
-       */
+    console.log("BOOKING CREATED:", response);
 
-      console.log("BOOKING DATA:", {
-        flightId,
-        passengers,
-        passengerCount,
-      });
+    router.push(
+      `/booking/${flightId}/payment?bookingId=${response.booking.id}`,
+    );
+  } catch (error) {
+    console.error("BOOKING CREATION ERROR:", error);
 
-      /*
-       * Temporary navigation
-       */
-      router.push(
-        `/booking/${flightId}/payment?passengers=${passengerCount}`
-      );
-    } catch (error) {
-      console.error(
-        "BOOKING CREATION ERROR:",
-        error
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    setErrors({
+      booking:
+        error instanceof Error
+          ? error.message
+          : "Unable to create booking. Please try again.",
+    });
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   /*
    * =====================================================
@@ -332,10 +282,7 @@ export default function PassengerPage() {
     return (
       <main className="min-h-screen bg-slate-50">
         <div className="mx-auto max-w-2xl px-6 py-24 text-center">
-          <Plane
-            size={50}
-            className="mx-auto text-slate-300"
-          />
+          <Plane size={50} className="mx-auto text-slate-300" />
 
           <h1 className="mt-5 text-2xl font-bold text-slate-900">
             Flight not found
@@ -362,13 +309,9 @@ export default function PassengerPage() {
    * =====================================================
    */
 
-  const departure = new Date(
-    flight.departureAt
-  );
+  const departure = new Date(flight.departureAt);
 
-  const arrival = new Date(
-    flight.arrivalAt
-  );
+  const arrival = new Date(flight.arrivalAt);
 
   const total = flight.fare * passengerCount;
 
@@ -409,35 +352,23 @@ export default function PassengerPage() {
               <ArrowLeft size={18} />
             </span>
 
-            <span className="hidden sm:block">
-              Back to Flight
-            </span>
+            <span className="hidden sm:block">Back to Flight</span>
           </Link>
 
           {/* LOGO */}
-          <Link
-            href="/"
-            className="flex items-center gap-2"
-          >
+          <Link href="/" className="flex items-center gap-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-700 text-white shadow-md shadow-blue-700/20">
               <Plane size={20} />
             </div>
 
-            <span className="text-2xl font-bold text-slate-900">
-              SkyBook
-            </span>
+            <span className="text-2xl font-bold text-slate-900">SkyBook</span>
           </Link>
 
           {/* SECURE */}
           <div className="flex items-center gap-2 text-sm font-medium text-slate-400">
-            <ShieldCheck
-              size={18}
-              className="text-blue-600"
-            />
+            <ShieldCheck size={18} className="text-blue-600" />
 
-            <span className="hidden sm:block">
-              Secure Booking
-            </span>
+            <span className="hidden sm:block">Secure Booking</span>
           </div>
         </div>
       </header>
@@ -499,7 +430,6 @@ export default function PassengerPage() {
         <div className="mb-10">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-xs font-bold uppercase tracking-wider text-orange-600">
             <Users size={14} />
-
             Passenger Information
           </div>
 
@@ -508,8 +438,8 @@ export default function PassengerPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-base leading-7 text-slate-500">
-            Enter the details for each passenger exactly as
-            they appear on their travel documents.
+            Enter the details for each passenger exactly as they appear on their
+            travel documents.
           </p>
         </div>
 
@@ -522,7 +452,19 @@ export default function PassengerPage() {
           {/* PASSENGER FORMS */}
           {/* ================================================= */}
 
+          {/* PASSENGER FORMS */}
+
           <div className="space-y-6">
+            {/* BOOKING ERROR */}
+            {errors.booking && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                <p className="text-sm font-semibold text-red-600">
+                  {errors.booking}
+                </p>
+              </div>
+            )}
+
+            {/* PASSENGER FORMS */}
             {passengers.map((passenger, index) => (
               <PassengerForm
                 key={index}
@@ -530,23 +472,15 @@ export default function PassengerPage() {
                 value={passenger}
                 errors={errors}
                 onChange={(field, value) =>
-                  updatePassenger(
-                    index,
-                    field,
-                    value
-                  )
+                  updatePassenger(index, field, value)
                 }
               />
             ))}
 
             {/* SECURITY INFO */}
-
             <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
               <div className="flex gap-3">
-                <ShieldCheck
-                  size={20}
-                  className="shrink-0 text-blue-700"
-                />
+                <ShieldCheck size={20} className="shrink-0 text-blue-700" />
 
                 <div>
                   <p className="text-sm font-bold text-blue-800">
@@ -554,9 +488,8 @@ export default function PassengerPage() {
                   </p>
 
                   <p className="mt-1 text-xs leading-5 text-blue-600">
-                    Passenger information is securely
-                    transmitted and used only for your
-                    booking.
+                    Passenger information is securely transmitted and used only
+                    for your booking.
                   </p>
                 </div>
               </div>
@@ -576,9 +509,7 @@ export default function PassengerPage() {
                   Booking Summary
                 </p>
 
-                <h2 className="mt-2 text-2xl font-bold">
-                  Your trip
-                </h2>
+                <h2 className="mt-2 text-2xl font-bold">Your trip</h2>
               </div>
 
               <div className="p-6">
@@ -597,10 +528,7 @@ export default function PassengerPage() {
                     </div>
 
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-700">
-                      <Plane
-                        size={16}
-                        className="rotate-90"
-                      />
+                      <Plane size={16} className="rotate-90" />
                     </div>
 
                     <div className="text-right">
@@ -643,22 +571,15 @@ export default function PassengerPage() {
 
                 <div className="mt-6 space-y-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">
-                      Fare per passenger
-                    </span>
+                    <span className="text-slate-500">Fare per passenger</span>
 
                     <span className="font-bold text-slate-800">
-                      ₹
-                      {flight.fare.toLocaleString(
-                        "en-IN"
-                      )}
+                      ₹{flight.fare.toLocaleString("en-IN")}
                     </span>
                   </div>
 
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500">
-                      Passengers
-                    </span>
+                    <span className="text-slate-500">Passengers</span>
 
                     <span className="font-bold text-slate-800">
                       × {passengerCount}
@@ -677,10 +598,7 @@ export default function PassengerPage() {
                     </p>
 
                     <p className="mt-1 text-3xl font-bold text-blue-700">
-                      ₹
-                      {total.toLocaleString(
-                        "en-IN"
-                      )}
+                      ₹{total.toLocaleString("en-IN")}
                     </p>
                   </div>
 
@@ -697,20 +615,15 @@ export default function PassengerPage() {
                   onClick={handleContinue}
                   className="mt-7 cursor-pointer flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-5 py-4 font-bold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {submitting
-                    ? "Processing..."
-                    : "Continue to Payment"}
+                  {submitting ? "Processing..." : "Continue to Payment"}
 
-                  {!submitting && (
-                    <ArrowRight size={18} />
-                  )}
+                  {!submitting && <ArrowRight size={18} />}
                 </button>
 
                 {/* PAYMENT SECURITY */}
 
                 <div className="mt-5 flex items-center justify-center gap-2 text-xs text-slate-400">
                   <CreditCard size={14} />
-
                   Secure payment with Stripe
                 </div>
               </div>

@@ -1,3 +1,5 @@
+import { Request } from "express";
+
 export interface RegisterDto {
   firstName: string;
   lastName: string;
@@ -10,8 +12,11 @@ export interface LoginDto {
   password: string;
 }
 
-export interface JwtUser {
-  userId: string;
-  email: string;
-  role: string;
+export interface AuthenticatedRequest
+  extends Request {
+  user?: {
+    userId: string;
+    email?: string;
+    role?: "USER" | "ADMIN";
+  };
 }
