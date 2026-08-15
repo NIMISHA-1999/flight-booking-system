@@ -1,282 +1,359 @@
 import { Request, Response } from "express";
 import Stripe from "stripe";
 
-import { prisma } from "../config/database";
 import { stripe } from "../config/stripe";
+import { prisma } from "../config/database";
 
 export const stripeWebhook = async (
   req: Request,
   res: Response,
 ) => {
-  console.log("\n========================================");
-  console.log("🔥 STRIPE WEBHOOK RECEIVED");
+  console.log("\n");
+  console.log("========================================");
+  console.log("🔥 STRIPE WEBHOOK HIT");
   console.log("========================================");
 
   console.log("METHOD:", req.method);
   console.log("URL:", req.originalUrl);
-  console.log("BODY TYPE:", typeof req.body);
-  console.log(
-    "BODY IS BUFFER:",
-    Buffer.isBuffer(req.body),
-  );
+  console.log("BODY IS BUFFER:", Buffer.isBuffer(req.body));
 
   const signature = req.headers["stripe-signature"];
 
-  console.log(
-    "STRIPE SIGNATURE:",
-    signature ? "PRESENT" : "MISSING",
-  );
-
   if (!signature) {
-    console.error("❌ Missing Stripe signature");
+    console.error("❌ Stripe signature missing");
 
-    return res.status(400).send(
-      "Missing Stripe signature",
-    );
+    return res.status(400).send("Missing Stripe signature");
   }
 
-  if (!process.env.STRIPE_WEBHOOK_SECRET) {
-    console.error(
-      "❌ STRIPE_WEBHOOK_SECRET is missing",
-    );
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    return res.status(500).send(
-      "Webhook secret missing",
-    );
+  if (!webhookSecret) {
+    console.error("❌ STRIPE_WEBHOOK_SECRET is missing");
+
+    return res.status(500).send("Webhook secret missing");
   }
 
   let event: Stripe.Event;
+
+  // =====================================================
+  // VERIFY STRIPE WEBHOOK
+  // =====================================================
 
   try {
     event = stripe.webhooks.constructEvent(
       req.body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET,
+      webhookSecret,
     );
 
-    console.log(
-      "✅ WEBHOOK SIGNATURE VERIFIED",
-    );
-
-    console.log(
-      "EVENT ID:",
-      event.id,
-    );
-
-    console.log(
-      "EVENT TYPE:",
-      event.type,
-    );
-
+    console.log("✅ WEBHOOK SIGNATURE VERIFIED");
+    console.log("EVENT ID:", event.id);
+    console.log("EVENT TYPE:", event.type);
   } catch (error) {
     console.error(
-      "❌ STRIPE WEBHOOK SIGNATURE ERROR:",
+      "❌ WEBHOOK SIGNATURE VERIFICATION FAILED:",
       error,
     );
 
-    return res.status(400).send(
-      "Invalid webhook signature",
-    );
+    return res.status(400).send("Invalid webhook signature");
   }
 
-  try {
-    switch (event.type) {
+  // =====================================================
+  // CHECKOUT COMPLETED
+  // =====================================================
 
-      case "checkout.session.completed": {
+  if (event.type === "checkout.session.completed") {
+    try {
+      const session =
+        event.data.object as Stripe.Checkout.Session;
 
-        console.log(
-          "\n🔥 checkout.session.completed",
-        );
+      console.log("\n");
+      console.log("========================================");
+      console.log("🔥 CHECKOUT SESSION COMPLETED");
+      console.log("========================================");
 
-        const session =
-          event.data.object as Stripe.Checkout.Session;
+      console.log("SESSION ID:", session.id);
+      console.log("PAYMENT STATUS:", session.payment_status);
+      console.log("SESSION STATUS:", session.status);
 
-        console.log(
-          "SESSION ID:",
-          session.id,
-        );
+      console.log(
+        "SESSION METADATA:",
+        JSON.stringify(session.metadata, null, 2),
+      );
 
-        console.log(
-          "PAYMENT STATUS:",
-          session.payment_status,
-        );
+      // =====================================================
+      // GET BOOKING ID
+      // =====================================================
 
-        console.log(
-          "SESSION STATUS:",
-          session.status,
-        );
+      const bookingId = session.metadata?.bookingId;
 
-        console.log(
-          "METADATA:",
-          session.metadata,
-        );
+      const userId = session.metadata?.userId;
 
-        const bookingId =
-          session.metadata?.bookingId;
+      console.log("BOOKING ID:", bookingId);
+      console.log("USER ID:", userId);
 
-        const userId =
-          session.metadata?.userId;
-
-        console.log(
-          "BOOKING ID:",
-          bookingId,
+      if (!bookingId) {
+        console.error(
+          "❌ bookingId NOT FOUND IN CHECKOUT SESSION",
         );
 
         console.log(
-          "USER ID:",
-          userId,
+          "Full session:",
+          JSON.stringify(session, null, 2),
         );
 
-        if (!bookingId) {
-          console.error(
-            "❌ BOOKING ID NOT FOUND IN METADATA",
-          );
-
-          break;
-        }
-
-        const booking =
-          await prisma.booking.findUnique({
-            where: {
-              id: bookingId,
-            },
-          });
-
-        console.log(
-          "BOOKING FROM DATABASE:",
-          booking,
-        );
-
-        if (!booking) {
-          console.error(
-            "❌ BOOKING NOT FOUND:",
-            bookingId,
-          );
-
-          break;
-        }
-
-        console.log(
-          "CURRENT BOOKING STATUS:",
-          booking.status,
-        );
-
-        if (booking.status === "CONFIRMED") {
-          console.log(
-            "ℹ️ Booking already CONFIRMED",
-          );
-
-          break;
-        }
-
-        const updatedBooking =
-          await prisma.booking.update({
-            where: {
-              id: bookingId,
-            },
-            data: {
-              status: "CONFIRMED",
-            },
-          });
-
-        console.log(
-          "✅ BOOKING UPDATED",
-        );
-
-        console.log(
-          "NEW STATUS:",
-          updatedBooking.status,
-        );
-
-        console.log(
-          `🎉 Booking ${bookingId} → CONFIRMED`,
-        );
-
-        break;
+        return res.status(200).json({
+          received: true,
+        });
       }
 
-      case "checkout.session.expired": {
+      // =====================================================
+      // GET PAYMENT INTENT
+      // =====================================================
 
-        const session =
-          event.data.object as Stripe.Checkout.Session;
+      const paymentIntentId =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent?.id;
 
-        const bookingId =
-          session.metadata?.bookingId;
+      console.log(
+        "PAYMENT INTENT ID:",
+        paymentIntentId,
+      );
 
-        console.log(
-          "Checkout expired:",
+      // =====================================================
+      // FIND BOOKING
+      // =====================================================
+
+      const booking = await prisma.booking.findUnique({
+        where: {
+          id: bookingId,
+        },
+      });
+
+      if (!booking) {
+        console.error(
+          "❌ BOOKING NOT FOUND:",
           bookingId,
         );
 
-        if (!bookingId) {
-          break;
-        }
+        return res.status(200).json({
+          received: true,
+        });
+      }
 
+      console.log(
+        "CURRENT BOOKING STATUS:",
+        booking.status,
+      );
+
+      // =====================================================
+      // UPDATE BOOKING
+      // =====================================================
+
+      const updatedBooking =
+        await prisma.booking.update({
+          where: {
+            id: bookingId,
+          },
+
+          data: {
+            status: "CONFIRMED",
+
+            ...(paymentIntentId
+              ? {
+                  stripePaymentIntentId:
+                    paymentIntentId,
+                }
+              : {}),
+          },
+        });
+
+      console.log(
+        "========================================",
+      );
+
+      console.log(
+        "✅ BOOKING UPDATED SUCCESSFULLY",
+      );
+
+      console.log(
+        "BOOKING ID:",
+        updatedBooking.id,
+      );
+
+      console.log(
+        "NEW STATUS:",
+        updatedBooking.status,
+      );
+
+      // =====================================================
+      // CREATE / UPDATE PAYMENT
+      // =====================================================
+
+      if (paymentIntentId) {
+        const payment =
+          await prisma.payment.upsert({
+            where: {
+              bookingId: bookingId,
+            },
+
+            create: {
+              bookingId: bookingId,
+
+              stripePaymentIntentId:
+                paymentIntentId,
+
+              amount: booking.totalAmount,
+
+              currency: "INR",
+
+              status: "SUCCEEDED",
+
+              paidAt: new Date(),
+            },
+
+            update: {
+              stripePaymentIntentId:
+                paymentIntentId,
+
+              status: "SUCCEEDED",
+
+              paidAt: new Date(),
+            },
+          });
+
+        console.log(
+          "✅ PAYMENT RECORD SAVED",
+        );
+
+        console.log(
+          "PAYMENT ID:",
+          payment.id,
+        );
+      }
+
+      console.log(
+        "========================================",
+      );
+
+      console.log(
+        "🎉 PAYMENT COMPLETED SUCCESSFULLY",
+      );
+
+      console.log(
+        "🎉 BOOKING STATUS → CONFIRMED",
+      );
+
+      console.log(
+        "========================================",
+      );
+    } catch (error) {
+      console.error(
+        "❌ DATABASE UPDATE FAILED:",
+        error,
+      );
+
+      return res.status(500).json({
+        received: true,
+        error: "Database update failed",
+      });
+    }
+  }
+
+  // =====================================================
+  // PAYMENT FAILED
+  // =====================================================
+
+  if (event.type === "payment_intent.payment_failed") {
+    try {
+      const paymentIntent =
+        event.data.object as Stripe.PaymentIntent;
+
+      console.log("❌ PAYMENT FAILED");
+      console.log(
+        "PAYMENT INTENT:",
+        paymentIntent.id,
+      );
+
+      console.log(
+        "METADATA:",
+        paymentIntent.metadata,
+      );
+
+      const bookingId =
+        paymentIntent.metadata?.bookingId;
+
+      if (bookingId) {
         await prisma.booking.updateMany({
           where: {
             id: bookingId,
             status: "PENDING",
           },
+
+          data: {
+            status: "PAYMENT_FAILED",
+          },
+        });
+
+        console.log(
+          "❌ BOOKING MARKED PAYMENT_FAILED",
+        );
+      }
+    } catch (error) {
+      console.error(
+        "❌ PAYMENT FAILED HANDLER ERROR:",
+        error,
+      );
+    }
+  }
+
+  // =====================================================
+  // CHECKOUT EXPIRED
+  // =====================================================
+
+  if (event.type === "checkout.session.expired") {
+    try {
+      const session =
+        event.data.object as Stripe.Checkout.Session;
+
+      const bookingId =
+        session.metadata?.bookingId;
+
+      console.log(
+        "CHECKOUT EXPIRED:",
+        bookingId,
+      );
+
+      if (bookingId) {
+        await prisma.booking.updateMany({
+          where: {
+            id: bookingId,
+            status: "PENDING",
+          },
+
           data: {
             status: "CANCELLED",
           },
         });
 
-        break;
+        console.log(
+          "✅ BOOKING CANCELLED",
+        );
       }
-
-      case "payment_intent.payment_failed": {
-
-        const paymentIntent =
-          event.data.object as Stripe.PaymentIntent;
-
-        console.log(
-          "❌ PAYMENT FAILED",
-          paymentIntent.id,
-        );
-
-        console.log(
-          "METADATA:",
-          paymentIntent.metadata,
-        );
-
-        break;
-      }
-
-      default:
-
-        console.log(
-          "ℹ️ Unhandled Stripe event:",
-          event.type,
-        );
+    } catch (error) {
+      console.error(
+        "❌ CHECKOUT EXPIRED ERROR:",
+        error,
+      );
     }
-
-    console.log(
-      "========================================",
-    );
-
-    console.log(
-      "✅ WEBHOOK COMPLETED",
-    );
-
-    console.log(
-      "========================================\n",
-    );
-
-    return res.status(200).json({
-      received: true,
-    });
-
-  } catch (error) {
-
-    console.error(
-      "❌ STRIPE WEBHOOK PROCESSING ERROR:",
-      error,
-    );
-
-    return res.status(500).json({
-      message:
-        "Webhook processing failed",
-    });
   }
+
+  // =====================================================
+  // ALWAYS ACKNOWLEDGE STRIPE
+  // =====================================================
+
+  return res.status(200).json({
+    received: true,
+  });
 };

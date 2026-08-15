@@ -12,7 +12,7 @@ router.use("/auth", authRoutes);
 router.use("/flights", flightRoutes);
 router.use("/bookings", bookingRoutes);
 router.use("/payments", paymentRoutes);
-router.use("/stripe", stripeWebhookRoutes);
+// router.use("/stripe", stripeWebhookRoutes);
 router.use("/bookings", cancellationRoutes);
 
 export default router;

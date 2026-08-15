@@ -29,13 +29,6 @@ export class PaymentService {
 
       payment_method_types: ["card"],
 
-      payment_intent_data: {
-        metadata: {
-          bookingId: booking.id,
-          userId,
-        },
-      },
-
       line_items: [
         {
           price_data: {
@@ -54,15 +47,34 @@ export class PaymentService {
         },
       ],
 
+      // IMPORTANT
       metadata: {
         bookingId: booking.id,
-        userId,
+        userId: userId,
       },
 
-      success_url: `${process.env.FRONTEND_URL}/booking/success?bookingId=${booking.id}`,
+      payment_intent_data: {
+        metadata: {
+          bookingId: booking.id,
+          userId: userId,
+        },
+      },
 
-      cancel_url: `${process.env.FRONTEND_URL}/booking/${booking.flightId}/payment?bookingId=${booking.id}`,
+      success_url: `${process.env.FRONTEND_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+
+      cancel_url:
+        `${process.env.FRONTEND_URL}` +
+        `/booking/${booking.flightId}/payment?bookingId=${booking.id}`,
     });
+
+    console.log("================================");
+
+    console.log("STRIPE SESSION CREATED:", session.id);
+
+    console.log("SESSION METADATA:", session.metadata);
+
+    console.log("================================");
+
     return session;
   }
 }

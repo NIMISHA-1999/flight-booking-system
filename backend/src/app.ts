@@ -1,61 +1,43 @@
 import express from "express";
 import cors from "cors";
-import helmet from "helmet";
-import morgan from "morgan";
 
-import routes from "./routes/index.js";
+import routes from "./routes";
+import stripeWebhookRoutes from "./routes/stripe-webhook.routes";
 
 const app = express();
 
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-];
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error("Not allowed by CORS"));
-    },
+    origin: "http://localhost:3000",
     credentials: true,
   }),
 );
 
-app.use(helmet());
-app.use(morgan("dev"));
+// =====================================================
+// STRIPE WEBHOOK
+// MUST BE BEFORE express.json()
+// =====================================================
 
-/*
- * Stripe webhook
- */
 app.use(
-  "/api/stripe/webhook",
+  "/api/stripe",
   express.raw({
     type: "application/json",
   }),
+  stripeWebhookRoutes,
 );
 
-/*
- * Normal body parser
- */
+// =====================================================
+// NORMAL BODY PARSER
+// =====================================================
+
 app.use(express.json());
 
-app.use(
-  express.urlencoded({
-    extended: true,
-  }),
-);
+app.use(express.urlencoded({ extended: true }));
 
-/*
- * Health
- */
+// =====================================================
+// HEALTH CHECK
+// =====================================================
+
 app.get("/", (_req, res) => {
   res.json({
     success: true,
@@ -63,9 +45,10 @@ app.get("/", (_req, res) => {
   });
 });
 
-/*
- * API routes
- */
+// =====================================================
+// NORMAL API ROUTES
+// =====================================================
+
 app.use("/api", routes);
 
 export default app;
