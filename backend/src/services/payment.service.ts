@@ -46,7 +46,9 @@ export class PaymentService {
               product_data: {
                 name: `Flight ${booking.flight.flightNumber}`,
 
-                description: `${booking.flight.origin} → ${booking.flight.destination}`,
+                description:
+                  `${booking.flight.origin} → ` +
+                  `${booking.flight.destination}`,
               },
 
               unit_amount: amount,
@@ -56,16 +58,28 @@ export class PaymentService {
           },
         ],
 
+        // Metadata on Checkout Session
         metadata: {
           bookingId: booking.id,
           userId,
         },
 
+        // Metadata on PaymentIntent
+        payment_intent_data: {
+          metadata: {
+            bookingId: booking.id,
+            userId,
+          },
+        },
+
         success_url:
-          `${process.env.FRONTEND_URL}/booking/success?bookingId=${booking.id}`,
+          `${process.env.FRONTEND_URL}` +
+          `/booking/success?bookingId=${booking.id}`,
 
         cancel_url:
-          `${process.env.FRONTEND_URL}/booking/${booking.flightId}/payment?bookingId=${booking.id}`,
+          `${process.env.FRONTEND_URL}` +
+          `/booking/${booking.flightId}/payment` +
+          `?bookingId=${booking.id}`,
       });
 
     return session;
