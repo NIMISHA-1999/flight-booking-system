@@ -37,6 +37,7 @@ export default function PassengerPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const flightId = params.flightId as string;
 
@@ -214,41 +215,54 @@ export default function PassengerPage() {
    */
 
   const handleContinue = async () => {
-  if (!validatePassengers()) {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    // Check login first
+    const accessToken = localStorage.getItem("accessToken");
 
-    return;
-  }
+    if (!accessToken) {
+      const currentUrl = window.location.pathname + window.location.search;
 
-  try {
-    setSubmitting(true);
+      localStorage.setItem("redirectAfterLogin", currentUrl);
 
-    const response = await createBooking({
-      flightId,
-      passengers,
-    });
+      setShowLoginModal(true);
+      return;
+    }
 
-    console.log("BOOKING CREATED:", response);
+    // Validate passenger details
+    if (!validatePassengers()) {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
 
-    router.push(
-      `/booking/${flightId}/payment?bookingId=${response.booking.id}`,
-    );
-  } catch (error) {
-    console.error("BOOKING CREATION ERROR:", error);
+      return;
+    }
 
-    setErrors({
-      booking:
-        error instanceof Error
-          ? error.message
-          : "Unable to create booking. Please try again.",
-    });
-  } finally {
-    setSubmitting(false);
-  }
-};
+    try {
+      setSubmitting(true);
+
+      const response = await createBooking({
+        flightId,
+        passengers,
+      });
+
+      console.log("BOOKING CREATED:", response);
+
+      router.push(
+        `/booking/${flightId}/payment?bookingId=${response.booking.id}`,
+      );
+    } catch (error) {
+      console.error("BOOKING CREATION ERROR:", error);
+
+      setErrors({
+        booking:
+          error instanceof Error
+            ? error.message
+            : "Unable to create booking. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   /*
    * =====================================================
@@ -631,6 +645,88 @@ export default function PassengerPage() {
           </aside>
         </div>
       </section>
+      {/* ================================================= */}
+      {/* LOGIN REQUIRED MODAL */}
+      {/* ================================================= */}
+
+      {showLoginModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm"
+          onClick={() => setShowLoginModal(false)}
+        >
+          <div
+            className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {/* TOP */}
+            <div className="bg-gradient-to-r from-blue-700 to-sky-500 px-6 py-7 text-center text-white">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 shadow-lg backdrop-blur">
+                <ShieldCheck size={30} />
+              </div>
+
+              <h2 className="mt-4 text-2xl font-bold">Login Required</h2>
+
+              <p className="mt-2 text-sm leading-6 text-blue-100">
+                Please sign in to your SkyBook account before continuing to
+                payment.
+              </p>
+            </div>
+
+            {/* CONTENT */}
+            <div className="p-6">
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <div className="flex gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+                    <CreditCard size={20} />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">
+                      Your booking is almost ready
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Login is required to securely create your booking and
+                      proceed with payment.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* BUTTONS */}
+              <div className="mt-6 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => router.push("/login")}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-700/20 transition hover:bg-blue-800"
+                >
+                  Login to Continue
+                  <ArrowRight size={18} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowLoginModal(false)}
+                  className="w-full rounded-xl border border-slate-200 px-5 py-3.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                >
+                  Maybe Later
+                </button>
+              </div>
+
+              <p className="mt-5 text-center text-xs text-slate-400">
+                Don't have an account?{" "}
+                <Link
+                  href="/register"
+                  onClick={() => setShowLoginModal(false)}
+                  className="font-semibold text-blue-600 hover:text-orange-500"
+                >
+                  Create one
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

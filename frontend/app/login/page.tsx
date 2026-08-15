@@ -15,7 +15,7 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" />
 
       {/* Content */}
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
+      <div >
         <LoginForm />
       </div>
     </main>
