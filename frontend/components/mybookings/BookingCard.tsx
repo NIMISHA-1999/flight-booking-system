@@ -8,12 +8,10 @@ import {
   ArrowRight,
   Users,
   CreditCard,
+  Ticket,
 } from "lucide-react";
 
-import BookingInfo from "./BookingInfo";
-import StatusBadge, {
-  BookingStatus,
-} from "./StatusBadge";
+import StatusBadge, { BookingStatus } from "./StatusBadge";
 
 export interface Booking {
   id: string;
@@ -40,16 +38,9 @@ interface BookingCardProps {
   booking: Booking;
 }
 
-export default function BookingCard({
-  booking,
-}: BookingCardProps) {
-  const departure = new Date(
-    booking.flight.departureAt,
-  );
-
-  const arrival = new Date(
-    booking.flight.arrivalAt,
-  );
+export default function BookingCard({ booking }: BookingCardProps) {
+  const departure = new Date(booking.flight.departureAt);
+  const arrival = new Date(booking.flight.arrivalAt);
 
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], {
@@ -59,195 +50,548 @@ export default function BookingCard({
 
   const formatDate = (date: Date) =>
     date.toLocaleDateString([], {
+      weekday: "short",
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
 
-  const totalAmount = Number(
-    booking.totalAmount,
-  );
+  const totalAmount = Number(booking.totalAmount);
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_10px_40px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_15px_50px_rgba(15,23,42,0.10)]">
-
+    <article
+      className="
+        group
+        overflow-hidden
+        rounded-[26px]
+        border border-slate-200
+        bg-white
+        shadow-[0_10px_35px_rgba(15,23,42,0.05)]
+        transition-all
+        duration-300
+        hover:-translate-y-1
+        hover:border-orange-200
+        hover:shadow-[0_18px_50px_rgba(15,23,42,0.09)]
+      "
+    >
+      {/* ================================================= */}
       {/* HEADER */}
+      {/* ================================================= */}
 
-      <div className="flex flex-col justify-between gap-4 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center md:px-8">
+      <div
+        className="
+          relative
+          overflow-hidden
+          border-b
+          border-orange-100
+          bg-gradient-to-r
+          from-orange-50
+          via-white
+          to-orange-50/40
+          px-5
+          py-4
+          md:px-7
+          md:py-5
+        "
+      >
+        {/* Decorative circles */}
 
-        <div className="flex items-center gap-4">
+        <div className="absolute -right-16 -top-20 h-40 w-40 rounded-full bg-orange-400/10 blur-3xl" />
 
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/20">
-            <Plane size={21} />
+        <div className="absolute -bottom-20 left-1/3 h-32 w-32 rounded-full bg-blue-400/10 blur-3xl" />
+
+        {/* Decorative plane */}
+
+        <Plane
+          size={110}
+          strokeWidth={1}
+          className="
+            absolute
+            right-8
+            top-1/2
+            hidden
+            -translate-y-1/2
+            rotate-[-10deg]
+            text-orange-500/5
+            lg:block
+          "
+        />
+
+        <div className="relative flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          {/* Airline */}
+
+          <div className="flex items-center gap-3.5">
+            {/* Icon */}
+
+            <div
+              className="
+                flex
+                h-11
+                w-11
+                shrink-0
+                items-center
+                justify-center
+                rounded-xl
+                bg-orange-500
+                text-white
+                shadow-md
+                shadow-orange-500/20
+                transition-transform
+                duration-300
+                group-hover:scale-105
+              "
+            >
+              <Plane
+                size={20}
+                className="rotate-[-8deg]"
+              />
+            </div>
+
+            {/* Airline information */}
+
+            <div>
+              <p className="text-sm font-extrabold tracking-tight text-slate-950 sm:text-base">
+                {booking.flight.airline}
+              </p>
+
+              <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+                <Ticket
+                  size={11}
+                  className="text-orange-500"
+                />
+
+                <span>
+                  Flight {booking.flight.flightNumber}
+                </span>
+
+                <span className="text-slate-300">
+                  •
+                </span>
+
+                <span>
+                  {booking.flight.origin} →{" "}
+                  {booking.flight.destination}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <p className="font-bold text-slate-950">
-              {booking.flight.airline}
-            </p>
+          {/* Status */}
 
-            <p className="mt-1 text-xs text-slate-400">
-              Flight {booking.flight.flightNumber}
-            </p>
+          <div className="relative z-10">
+            <StatusBadge status={booking.status} />
           </div>
-
         </div>
-
-        <StatusBadge status={booking.status} />
-
       </div>
 
-      {/* ROUTE */}
+      {/* ================================================= */}
+      {/* MAIN */}
+      {/* ================================================= */}
 
-      <div className="px-6 py-7 md:px-8">
+      <div className="px-5 py-6 md:px-7 md:py-7">
+        {/* ================================================= */}
+        {/* DATE */}
+        {/* ================================================= */}
 
-        <div className="grid items-center gap-7 md:grid-cols-[1fr_180px_1fr]">
+        <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400">
+            <CalendarDays
+              size={13}
+              className="text-orange-500"
+            />
 
+            <span>{formatDate(departure)}</span>
+          </div>
+
+          <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+
+            <span>Flight itinerary</span>
+          </div>
+        </div>
+
+        {/* ================================================= */}
+        {/* ROUTE */}
+        {/* ================================================= */}
+
+        <div className="grid items-center gap-5 md:grid-cols-[1fr_190px_1fr]">
+          {/* ================================================= */}
           {/* DEPARTURE */}
+          {/* ================================================= */}
 
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+            <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-slate-400">
               Departure
             </p>
 
-            <div className="mt-2 flex items-center gap-3">
-
-              <p className="text-3xl font-black text-slate-950">
+            <div className="mt-1.5 flex items-center gap-2">
+              <h2 className="text-xl font-black tracking-tight text-slate-950 sm:text-2xl lg:text-3xl">
                 {booking.flight.origin}
-              </p>
+              </h2>
 
               <MapPin
-                size={17}
+                size={16}
                 className="text-orange-500"
               />
-
             </div>
 
-            <p className="mt-1 text-xl font-bold text-orange-500">
+            <p className="mt-1.5 text-base font-extrabold text-orange-500 sm:text-lg">
               {formatTime(departure)}
+            </p>
+
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              Departure time
             </p>
           </div>
 
+          {/* ================================================= */}
           {/* CENTER */}
+          {/* ================================================= */}
 
-          <div className="flex flex-col items-center">
+          <div className="order-first md:order-none">
+            <div className="flex items-center justify-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
 
-            <span className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-              Non-stop
-            </span>
+              <span className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-slate-400">
+                Non-stop
+              </span>
 
-            <div className="flex w-full items-center">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+            </div>
 
-              <div className="h-px flex-1 bg-slate-200" />
+            <div className="mt-3 flex items-center">
+              <div className="h-px flex-1 border-t border-dashed border-slate-300" />
 
-              <div className="mx-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/20">
-
+              <div
+                className="
+                  mx-2.5
+                  flex
+                  h-10
+                  w-10
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-full
+                  border-[4px]
+                  border-orange-50
+                  bg-orange-500
+                  text-white
+                  shadow-md
+                  shadow-orange-500/20
+                  transition-transform
+                  duration-300
+                  group-hover:scale-110
+                "
+              >
                 <Plane
                   size={16}
                   className="rotate-90"
                 />
-
               </div>
 
-              <div className="h-px flex-1 bg-slate-200" />
-
+              <div className="h-px flex-1 border-t border-dashed border-slate-300" />
             </div>
 
-            <div className="mt-3 flex items-center gap-1 text-xs text-slate-400">
+            <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[11px] font-medium text-slate-400">
               <Clock3 size={12} />
-              Direct flight
-            </div>
 
+              <span>Direct flight</span>
+            </div>
           </div>
 
+          {/* ================================================= */}
           {/* ARRIVAL */}
+          {/* ================================================= */}
 
           <div className="md:text-right">
-
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
+            <p className="text-[9px] font-extrabold uppercase tracking-[0.18em] text-slate-400">
               Arrival
             </p>
 
-            <div className="mt-2 flex items-center gap-3 md:justify-end">
-
-              <p className="text-3xl font-black text-slate-950">
+            <div className="mt-1.5 flex items-center gap-2 md:justify-end">
+              <h2 className="text-xl font-black tracking-tight text-slate-950 sm:text-2xl lg:text-3xl">
                 {booking.flight.destination}
-              </p>
+              </h2>
 
               <MapPin
-                size={17}
+                size={16}
                 className="text-orange-500"
               />
-
             </div>
 
-            <p className="mt-1 text-xl font-bold text-orange-500">
+            <p className="mt-1.5 text-base font-extrabold text-orange-500 sm:text-lg">
               {formatTime(arrival)}
             </p>
 
+            <p className="mt-0.5 text-[11px] text-slate-400">
+              Arrival time
+            </p>
+          </div>
+        </div>
+
+        {/* ================================================= */}
+        {/* TICKET DIVIDER */}
+        {/* ================================================= */}
+
+        <div className="relative my-6">
+          <div className="border-t border-dashed border-slate-200" />
+
+          {/* Left cut */}
+
+          <div
+            className="
+              absolute
+              -left-8
+              -top-3
+              h-6
+              w-6
+              rounded-full
+              bg-slate-50
+              md:-left-10
+            "
+          />
+
+          {/* Right cut */}
+
+          <div
+            className="
+              absolute
+              -right-8
+              -top-3
+              h-6
+              w-6
+              rounded-full
+              bg-slate-50
+              md:-right-10
+            "
+          />
+        </div>
+
+        {/* ================================================= */}
+        {/* INFORMATION */}
+        {/* ================================================= */}
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {/* Departure Date */}
+
+          <div
+            className="
+              rounded-xl
+              border
+              border-slate-100
+              bg-slate-50/70
+              p-3.5
+              transition
+              duration-300
+              group-hover:border-orange-100
+              group-hover:bg-orange-50/30
+            "
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="
+                  flex
+                  h-9
+                  w-9
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-lg
+                  bg-white
+                  text-orange-500
+                  shadow-sm
+                "
+              >
+                <CalendarDays size={17} />
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  Departure
+                </p>
+
+                <p className="mt-1 truncate text-xs font-extrabold text-slate-800">
+                  {formatDate(departure)}
+                </p>
+              </div>
+            </div>
           </div>
 
+          {/* Passengers */}
+
+          <div
+            className="
+              rounded-xl
+              border
+              border-slate-100
+              bg-slate-50/70
+              p-3.5
+              transition
+              duration-300
+              group-hover:border-blue-100
+              group-hover:bg-blue-50/30
+            "
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="
+                  flex
+                  h-9
+                  w-9
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-lg
+                  bg-white
+                  text-blue-500
+                  shadow-sm
+                "
+              >
+                <Users size={17} />
+              </div>
+
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  Passengers
+                </p>
+
+                <p className="mt-1 text-xs font-extrabold text-slate-800">
+                  {booking.passengerCount}{" "}
+                  {booking.passengerCount === 1
+                    ? "Passenger"
+                    : "Passengers"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Fare */}
+
+          <div
+            className="
+              rounded-xl
+              border
+              border-orange-100
+              bg-orange-50/70
+              p-3.5
+            "
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className="
+                  flex
+                  h-9
+                  w-9
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-lg
+                  bg-orange-500
+                  text-white
+                  shadow-sm
+                  shadow-orange-500/20
+                "
+              >
+                <CreditCard size={17} />
+              </div>
+
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-wider text-orange-500/70">
+                  Total Fare
+                </p>
+
+                <p className="mt-1 text-base font-black text-slate-950">
+                  ₹{totalAmount.toLocaleString("en-IN")}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {/* DETAILS */}
-
-        <div className="mt-8 grid gap-4 border-t border-slate-100 pt-7 sm:grid-cols-3">
-
-          <BookingInfo
-            icon={<CalendarDays size={18} />}
-            label="Departure"
-            value={formatDate(departure)}
-          />
-
-          <BookingInfo
-            icon={<Users size={18} />}
-            label="Passengers"
-            value={`${booking.passengerCount} ${
-              booking.passengerCount === 1
-                ? "Passenger"
-                : "Passengers"
-            }`}
-          />
-
-          <BookingInfo
-            icon={<CreditCard size={18} />}
-            label="Total Fare"
-            value={`₹${totalAmount.toLocaleString(
-              "en-IN",
-            )}`}
-            highlight
-          />
-
-        </div>
-
       </div>
 
+      {/* ================================================= */}
       {/* FOOTER */}
+      {/* ================================================= */}
 
-      <div className="flex flex-col justify-between gap-4 border-t border-slate-100 bg-[#fafaf8] px-6 py-5 sm:flex-row sm:items-center md:px-8">
+      <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4 md:px-7">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          {/* Booking Reference */}
 
-        <div>
+          <div className="flex items-center gap-3">
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                shrink-0
+                items-center
+                justify-center
+                rounded-lg
+                bg-white
+                text-orange-500
+                shadow-sm
+                ring-1
+                ring-slate-100
+              "
+            >
+              <Ticket size={17} />
+            </div>
 
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-            Booking Reference
-          </p>
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                Booking Reference
+              </p>
 
-          <p className="mt-1 font-black tracking-wider text-slate-950">
-            {booking.bookingReference}
-          </p>
+              <p className="mt-0.5 text-xs font-black tracking-[0.14em] text-slate-950">
+                {booking.bookingReference}
+              </p>
+            </div>
+          </div>
 
+          {/* View Booking */}
+
+          <Link
+            href={`/bookings/${booking.id}`}
+            className="
+              group/button
+              inline-flex
+              items-center
+              justify-center
+              gap-2
+              rounded-xl
+              bg-orange-500
+              px-5
+              py-2.5
+              text-xs
+              font-bold
+              text-white
+              shadow-md
+              shadow-orange-500/20
+              transition-all
+              duration-200
+              hover:bg-orange-600
+              hover:shadow-orange-500/30
+            "
+          >
+            View Booking
+
+            <ArrowRight
+              size={15}
+              className="
+                transition-transform
+                duration-200
+                group-hover/button:translate-x-1
+              "
+            />
+          </Link>
         </div>
-
-        <Link
-          href={`/bookings/${booking.id}`}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition hover:border-orange-300 hover:text-orange-500"
-        >
-          View Details
-          <ArrowRight size={16} />
-        </Link>
-
       </div>
 
-    </div>
+      {/* ================================================= */}
+      {/* BOTTOM ACCENT */}
+      {/* ================================================= */}
+
+      <div className="h-1 bg-gradient-to-r from-orange-500 via-orange-400 to-sky-400" />
+    </article>
   );
 }

@@ -225,7 +225,7 @@ export default function BookingSuccessPage() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
 
                 <Link
-                  href="/"
+                  href="/dashboard"
                   className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                 >
                   <Home size={17} />
