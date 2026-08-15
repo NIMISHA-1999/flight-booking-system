@@ -1,10 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
 import {
   Plane,
   ShieldCheck,
   Clock3,
   Globe2,
   Search,
+  CalendarDays,
+  MapPin,
   Users,
 } from "lucide-react";
 
@@ -28,20 +35,59 @@ const destinations = [
       "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=900",
   },
 ];
+
 export default function Home() {
+  const router = useRouter();
+
+  // ================= SEARCH STATES =================
+
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [departureDate, setDepartureDate] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+  const [passengers, setPassengers] = useState("1");
+
+  // ================= SEARCH =================
+
+  const handleSearch = () => {
+  // From and To are required
+  if (!from || !to) {
+    alert("Please select origin and destination.");
+    return;
+  }
+
+  const params = new URLSearchParams({
+    origin: from,
+    destination: to,
+    passengers,
+  });
+
+  // Departure date is optional
+  if (departureDate) {
+    params.append("date", departureDate);
+  }
+
+  // Return date is also optional
+  if (returnDate) {
+    params.append("returnDate", returnDate);
+  }
+
+  router.push(`/flights?${params.toString()}`);
+};
+
   return (
     <main className="bg-slate-50">
 
       {/* ================= NAVBAR ================= */}
 
       <nav className="absolute top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto flex justify-between items-center py-6 px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
 
           <h1 className="text-3xl font-bold text-white">
             SkyBook
           </h1>
 
-          <div className="hidden md:flex gap-8 text-white font-medium">
+          <div className="hidden gap-8 font-medium text-white md:flex">
             <Link href="/">Home</Link>
             <Link href="/flights">Flights</Link>
             <Link href="/offers">Offers</Link>
@@ -49,20 +95,23 @@ export default function Home() {
           </div>
 
           <div className="flex gap-3">
+
             <Link
               href="/login"
-              className="border border-white px-5 py-2 rounded-lg text-white hover:bg-white hover:text-slate-900 transition"
+              className="rounded-lg border border-white px-5 py-2 text-white transition hover:bg-white hover:text-slate-900"
             >
               Login
             </Link>
 
             <Link
               href="/register"
-              className="bg-orange-500 px-5 py-2 rounded-lg text-white hover:bg-orange-600"
+              className="rounded-lg bg-orange-500 px-5 py-2 text-white transition hover:bg-orange-600"
             >
               Register
             </Link>
+
           </div>
+
         </div>
       </nav>
 
@@ -75,79 +124,316 @@ export default function Home() {
             "url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1600')",
         }}
       >
-        <div className="absolute inset-0 bg-black/60"></div>
 
-        <div className="relative max-w-7xl mx-auto h-full flex flex-col justify-center px-6">
+        <div className="absolute inset-0 bg-black/60" />
 
-          <h1 className="text-white text-6xl md:text-7xl font-bold max-w-3xl">
+        <div className="relative mx-auto flex h-full max-w-7xl flex-col justify-center px-6">
+
+          {/* HERO CONTENT */}
+
+          <h1 className="max-w-3xl text-6xl font-bold text-white md:text-7xl">
             Discover the World with SkyBook
           </h1>
 
-          <p className="text-white text-xl mt-6 max-w-xl">
+          <p className="mt-6 max-w-xl text-xl text-white">
             Book domestic and international flights at unbeatable prices.
           </p>
 
-          {/* Search */}
+          {/* ================= SEARCH BOX ================= */}
 
-          <div className="mt-12 bg-white/20 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+          <div className="mt-12 rounded-3xl border border-white/20 bg-white/20 p-6 shadow-2xl backdrop-blur-xl md:p-8">
 
-            <div className="grid md:grid-cols-6 gap-4">
+            <div className="mb-6 flex items-center gap-2 text-white">
 
-              <input
-                placeholder="From"
-                className="bg-white rounded-xl p-4"
-              />
+              <Search size={22} />
 
-              <input
-                placeholder="To"
-                className="bg-white rounded-xl p-4"
-              />
+              <h2 className="text-xl font-semibold">
+                Search Flights
+              </h2>
 
-              <input
-                type="date"
-                className="bg-white rounded-xl p-4"
-              />
+            </div>
 
-              <input
-                type="date"
-                className="bg-white rounded-xl p-4"
-              />
+            <div className="grid gap-4 md:grid-cols-6">
 
-              <input
-                placeholder="Passengers"
-                className="bg-white rounded-xl p-4"
-              />
+              {/* ================= FROM ================= */}
 
-              <button className="bg-orange-500 hover:bg-orange-600 rounded-xl text-white flex items-center justify-center gap-2">
-                <Search size={20} />
-                Search
-              </button>
+              <div>
+
+                <label className="mb-2 block text-sm font-medium text-white">
+                  From
+                </label>
+
+                <div className="relative">
+
+                  <MapPin
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    type="text"
+                    value={from}
+                    onChange={(e) =>
+                      setFrom(e.target.value.toUpperCase())
+                    }
+                    placeholder="Chennai"
+                    className="
+                      w-full
+                      rounded-xl
+                      bg-white
+                      px-4
+                      py-3
+                      pl-10
+                      text-slate-900
+                      outline-none
+                      placeholder:text-slate-400
+                      focus:ring-4
+                      focus:ring-orange-200
+                    "
+                  />
+
+                </div>
+
+              </div>
+
+              {/* ================= TO ================= */}
+
+              <div>
+
+                <label className="mb-2 block text-sm font-medium text-white">
+                  To
+                </label>
+
+                <div className="relative">
+
+                  <MapPin
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    type="text"
+                    value={to}
+                    onChange={(e) =>
+                      setTo(e.target.value.toUpperCase())
+                    }
+                    placeholder="Mumbai"
+                    className="
+                      w-full
+                      rounded-xl
+                      bg-white
+                      px-4
+                      py-3
+                      pl-10
+                      text-slate-900
+                      outline-none
+                      placeholder:text-slate-400
+                      focus:ring-4
+                      focus:ring-orange-200
+                    "
+                  />
+
+                </div>
+
+              </div>
+
+              {/* ================= DEPARTURE ================= */}
+
+              <div>
+
+                <label className="mb-2 block text-sm font-medium text-white">
+                  Departure
+                </label>
+
+                <div className="relative">
+
+                  <CalendarDays
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    type="date"
+                    value={departureDate}
+                    onChange={(e) =>
+                      setDepartureDate(e.target.value)
+                    }
+                    className="
+                      w-full
+                      rounded-xl
+                      bg-white
+                      px-4
+                      py-3
+                      pl-10
+                      text-slate-900
+                      outline-none
+                      focus:ring-4
+                      focus:ring-orange-200
+                    "
+                  />
+
+                </div>
+
+              </div>
+
+              {/* ================= RETURN ================= */}
+
+              <div>
+
+                <label className="mb-2 block text-sm font-medium text-white">
+                  Return
+                </label>
+
+                <div className="relative">
+
+                  <CalendarDays
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    type="date"
+                    value={returnDate}
+                    min={departureDate || undefined}
+                    onChange={(e) =>
+                      setReturnDate(e.target.value)
+                    }
+                    className="
+                      w-full
+                      rounded-xl
+                      bg-white
+                      px-4
+                      py-3
+                      pl-10
+                      text-slate-900
+                      outline-none
+                      focus:ring-4
+                      focus:ring-orange-200
+                    "
+                  />
+
+                </div>
+
+              </div>
+
+              {/* ================= PASSENGERS ================= */}
+
+              <div>
+
+                <label className="mb-2 block text-sm font-medium text-white">
+                  Passengers
+                </label>
+
+                <div className="relative">
+
+                  <Users
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <select
+                    value={passengers}
+                    onChange={(e) =>
+                      setPassengers(e.target.value)
+                    }
+                    className="
+                      w-full
+                      appearance-none
+                      rounded-xl
+                      bg-white
+                      px-4
+                      py-3
+                      pl-10
+                      text-slate-900
+                      outline-none
+                      focus:ring-4
+                      focus:ring-orange-200
+                    "
+                  >
+
+                    {Array.from(
+                      { length: 8 },
+                      (_, index) => index + 1
+                    ).map((number) => (
+
+                      <option
+                        key={number}
+                        value={number}
+                      >
+                        {number}{" "}
+                        {number === 1
+                          ? "Passenger"
+                          : "Passengers"}
+                      </option>
+
+                    ))}
+
+                  </select>
+
+                </div>
+
+              </div>
+
+              {/* ================= SEARCH BUTTON ================= */}
+
+              <div className="flex items-end">
+
+                <button
+                  type="button"
+                  onClick={handleSearch}
+                  className="
+                    flex
+                    w-full
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-xl
+                    bg-orange-500
+                    px-5
+                    py-3
+                    font-semibold
+                    text-white
+                    transition
+                    hover:bg-orange-600
+                    hover:shadow-lg
+                  "
+                >
+
+                  <Search size={20} />
+
+                  Search
+
+                </button>
+
+              </div>
 
             </div>
 
           </div>
+
         </div>
+
       </section>
 
       {/* ================= DESTINATIONS ================= */}
 
-      <section className="py-24 max-w-7xl mx-auto px-6">
+      <section className="mx-auto max-w-7xl px-6 py-24">
 
-        <h2 className="text-4xl font-bold text-center">
+        <h2 className="text-center text-4xl font-bold">
           Popular Destinations
         </h2>
 
-        <p className="text-center text-gray-500 mt-3">
+        <p className="mt-3 text-center text-gray-500">
           Explore our most booked destinations.
         </p>
 
-        <div className="grid md:grid-cols-3 gap-8 mt-14">
+        <div className="mt-14 grid gap-8 md:grid-cols-3">
 
           {destinations.map((item) => (
 
             <div
               key={item.city}
-              className="rounded-3xl overflow-hidden shadow-xl bg-white hover:-translate-y-3 duration-300"
+              className="overflow-hidden rounded-3xl bg-white shadow-xl transition duration-300 hover:-translate-y-3"
             >
 
               <img
@@ -166,13 +452,13 @@ export default function Home() {
                   Flights from
                 </p>
 
-                <div className="flex justify-between items-center mt-5">
+                <div className="mt-5 flex items-center justify-between">
 
                   <span className="text-3xl font-bold text-blue-700">
                     {item.price}
                   </span>
 
-                  <button className="bg-orange-500 text-white px-5 py-2 rounded-lg">
+                  <button className="rounded-lg bg-orange-500 px-5 py-2 text-white">
                     Book
                   </button>
 
@@ -192,13 +478,13 @@ export default function Home() {
 
       <section className="bg-white py-24">
 
-        <div className="max-w-7xl mx-auto">
+        <div className="mx-auto max-w-7xl">
 
           <h2 className="text-center text-4xl font-bold">
             Why Choose SkyBook
           </h2>
 
-          <div className="grid md:grid-cols-4 gap-10 mt-16 px-6">
+          <div className="mt-16 grid gap-10 px-6 md:grid-cols-4">
 
             <Feature
               icon={<Plane size={42} />}
@@ -232,16 +518,13 @@ export default function Home() {
 
       {/* ================= STATS ================= */}
 
-      <section className="bg-slate-900 text-white py-20">
+      <section className="bg-slate-900 py-20 text-white">
 
-        <div className="max-w-6xl mx-auto grid md:grid-cols-4 text-center gap-10">
+        <div className="mx-auto grid max-w-6xl gap-10 text-center md:grid-cols-4">
 
           <Stat number="15M+" label="Passengers" />
-
           <Stat number="180+" label="Countries" />
-
           <Stat number="500+" label="Airlines" />
-
           <Stat number="98%" label="Customer Satisfaction" />
 
         </div>
@@ -250,9 +533,12 @@ export default function Home() {
 
       {/* ================= CTA ================= */}
 
-      <section className="py-24 bg-gradient-to-r from-blue-700 to-sky-500 text-white text-center">
+      <section className="bg-gradient-to-r from-blue-700 to-sky-500 py-24 text-center text-white">
 
-        <Users className="mx-auto mb-5" size={60} />
+        <Users
+          className="mx-auto mb-5"
+          size={60}
+        />
 
         <h2 className="text-5xl font-bold">
           Ready for Your Next Journey?
@@ -264,7 +550,7 @@ export default function Home() {
 
         <Link
           href="/flights"
-          className="inline-block mt-10 bg-orange-500 px-8 py-4 rounded-xl font-bold hover:bg-orange-600"
+          className="mt-10 inline-block rounded-xl bg-orange-500 px-8 py-4 font-bold hover:bg-orange-600"
         >
           Search Flights
         </Link>
@@ -273,18 +559,18 @@ export default function Home() {
 
       {/* ================= FOOTER ================= */}
 
-      <footer className="bg-slate-950 text-gray-300 py-8">
+      <footer className="bg-slate-950 py-8 text-gray-300">
 
-        <div className="max-w-7xl mx-auto flex justify-between flex-col md:flex-row px-6">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between px-6 md:flex-row">
 
-          <p>© 2026 SkyBook. All rights reserved.</p>
+          <p>
+            © 2026 SkyBook. All rights reserved.
+          </p>
 
-          <div className="flex gap-6 mt-4 md:mt-0">
+          <div className="mt-4 flex gap-6 md:mt-0">
 
             <Link href="/">Privacy</Link>
-
             <Link href="/">Terms</Link>
-
             <Link href="/">Support</Link>
 
           </div>
@@ -307,12 +593,20 @@ function Feature({
   text: string;
 }) {
   return (
-    <div className="text-center p-8 rounded-2xl shadow hover:shadow-xl duration-300">
-      <div className="text-blue-700 flex justify-center">{icon}</div>
+    <div className="rounded-2xl p-8 text-center shadow transition duration-300 hover:shadow-xl">
 
-      <h3 className="text-xl font-bold mt-5">{title}</h3>
+      <div className="flex justify-center text-blue-700">
+        {icon}
+      </div>
 
-      <p className="text-gray-500 mt-3">{text}</p>
+      <h3 className="mt-5 text-xl font-bold">
+        {title}
+      </h3>
+
+      <p className="mt-3 text-gray-500">
+        {text}
+      </p>
+
     </div>
   );
 }
@@ -326,9 +620,15 @@ function Stat({
 }) {
   return (
     <div>
-      <h3 className="text-5xl font-bold text-orange-400">{number}</h3>
 
-      <p className="mt-3 text-lg">{label}</p>
+      <h3 className="text-5xl font-bold text-orange-400">
+        {number}
+      </h3>
+
+      <p className="mt-3 text-lg">
+        {label}
+      </p>
+
     </div>
   );
 }
