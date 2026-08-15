@@ -29,6 +29,9 @@ export const authMiddleware = (
         : "MISSING",
     );
 
+    /*
+     * Authorization header
+     */
     if (!authHeader) {
       console.log(
         "AUTH FAILED: Authorization header missing",
@@ -38,9 +41,13 @@ export const authMiddleware = (
         success: false,
         message:
           "Authorization header is missing.",
+        code: "AUTH_HEADER_MISSING",
       });
     }
 
+    /*
+     * Bearer token
+     */
     if (!authHeader.startsWith("Bearer ")) {
       console.log(
         "AUTH FAILED: Invalid Bearer format",
@@ -50,15 +57,29 @@ export const authMiddleware = (
         success: false,
         message:
           "Invalid authorization format.",
+        code: "INVALID_AUTH_FORMAT",
       });
     }
 
     const token =
       authHeader.substring(7).trim();
 
+    if (!token) {
+      console.log(
+        "AUTH FAILED: Access token missing",
+      );
+
+      return res.status(401).json({
+        success: false,
+        message:
+          "Access token is missing.",
+        code: "ACCESS_TOKEN_MISSING",
+      });
+    }
+
     console.log(
       "Token exists:",
-      !!token,
+      true,
     );
 
     console.log(
@@ -66,24 +87,29 @@ export const authMiddleware = (
       token.length,
     );
 
-    if (!token) {
-      return res.status(401).json({
+    /*
+     * JWT secret check
+     */
+    if (!process.env.JWT_ACCESS_SECRET) {
+      console.error(
+        "JWT_ACCESS_SECRET is not configured.",
+      );
+
+      return res.status(500).json({
         success: false,
         message:
-          "Access token is missing.",
+          "Authentication service is not configured.",
       });
     }
 
     console.log(
       "JWT_ACCESS_SECRET exists:",
-      !!process.env.JWT_ACCESS_SECRET,
+      true,
     );
 
-    console.log(
-      "JWT_ACCESS_SECRET length:",
-      process.env.JWT_ACCESS_SECRET?.length,
-    );
-
+    /*
+     * Verify JWT
+     */
     console.log(
       "Verifying access token...",
     );
@@ -96,6 +122,9 @@ export const authMiddleware = (
       decoded,
     );
 
+    /*
+     * Validate payload
+     */
     if (!decoded.userId) {
       console.log(
         "AUTH FAILED: userId missing",
@@ -105,9 +134,13 @@ export const authMiddleware = (
         success: false,
         message:
           "Invalid token payload.",
+        code: "INVALID_TOKEN_PAYLOAD",
       });
     }
 
+    /*
+     * Attach authenticated user
+     */
     req.user = {
       userId: decoded.userId,
       email: decoded.email,
@@ -128,27 +161,66 @@ export const authMiddleware = (
     );
 
     return next();
+
   } catch (error) {
     console.error(
-      "========== JWT VERIFY ERROR ==========",
+      "\n========== JWT VERIFY ERROR ==========",
     );
 
-    console.error(
-      "Error:",
-      error,
-    );
+    console.error("Error:", error);
 
-    if (error instanceof Error) {
+    /*
+     * JWT expired
+     */
+    if (
+      error instanceof Error &&
+      error.name === "TokenExpiredError"
+    ) {
       console.error(
-        "Error name:",
-        error.name,
+        "ACCESS TOKEN EXPIRED",
       );
 
       console.error(
-        "Error message:",
-        error.message,
+        "======================================\n",
       );
+
+      return res.status(401).json({
+        success: false,
+        message:
+          "Access token expired.",
+        code: "ACCESS_TOKEN_EXPIRED",
+      });
     }
+
+    /*
+     * Invalid JWT
+     */
+    if (
+      error instanceof Error &&
+      error.name === "JsonWebTokenError"
+    ) {
+      console.error(
+        "INVALID ACCESS TOKEN",
+      );
+
+      console.error(
+        "======================================\n",
+      );
+
+      return res.status(401).json({
+        success: false,
+        message:
+          "Invalid access token.",
+        code: "INVALID_ACCESS_TOKEN",
+      });
+    }
+
+    /*
+     * Other authentication error
+     */
+    console.error(
+      "UNKNOWN AUTHENTICATION ERROR",
+    );
 
     console.error(
       "======================================\n",
@@ -159,7 +231,8 @@ export const authMiddleware = (
       message:
         error instanceof Error
           ? error.message
-          : "Invalid or expired token.",
+          : "Authentication failed.",
+      code: "AUTHENTICATION_FAILED",
     });
   }
 };

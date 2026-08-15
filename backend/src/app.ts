@@ -33,15 +33,7 @@ app.use(helmet());
 app.use(morgan("dev"));
 
 /*
- * =====================================================
- * STRIPE WEBHOOK
- * =====================================================
- *
- * IMPORTANT:
- * This MUST come before express.json().
- *
- * Stripe requires the original/raw request body
- * to verify the stripe-signature.
+ * Stripe webhook
  */
 app.use(
   "/api/stripe/webhook",
@@ -51,11 +43,8 @@ app.use(
 );
 
 /*
- * =====================================================
- * NORMAL REQUEST BODY
- * =====================================================
+ * Normal body parser
  */
-
 app.use(express.json());
 
 app.use(
@@ -65,11 +54,8 @@ app.use(
 );
 
 /*
- * =====================================================
- * HEALTH
- * =====================================================
+ * Health
  */
-
 app.get("/", (_req, res) => {
   res.json({
     success: true,
@@ -78,11 +64,8 @@ app.get("/", (_req, res) => {
 });
 
 /*
- * =====================================================
- * API ROUTES
- * =====================================================
+ * API routes
  */
-
 app.use("/api", routes);
 
 export default app;

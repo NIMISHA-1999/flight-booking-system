@@ -1,4 +1,5 @@
 import Link from "next/link";
+
 import {
   Plane,
   CalendarDays,
@@ -17,20 +18,22 @@ import StatusBadge, {
 export interface Booking {
   id: string;
   bookingReference: string;
+
   status: BookingStatus;
 
   flight: {
+    id?: string;
     airline: string;
     flightNumber: string;
     origin: string;
     destination: string;
     departureAt: string;
     arrivalAt: string;
-    fare: number;
+    fare: number | string;
   };
 
-  passengers: number;
-  totalAmount: number;
+  passengerCount: number;
+  totalAmount: number | string;
 }
 
 interface BookingCardProps {
@@ -41,11 +44,11 @@ export default function BookingCard({
   booking,
 }: BookingCardProps) {
   const departure = new Date(
-    booking.flight.departureAt
+    booking.flight.departureAt,
   );
 
   const arrival = new Date(
-    booking.flight.arrivalAt
+    booking.flight.arrivalAt,
   );
 
   const formatTime = (date: Date) =>
@@ -61,10 +64,14 @@ export default function BookingCard({
       year: "numeric",
     });
 
+  const totalAmount = Number(
+    booking.totalAmount,
+  );
+
   return (
     <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_10px_40px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_15px_50px_rgba(15,23,42,0.10)]">
 
-      {/* Booking Header */}
+      {/* HEADER */}
 
       <div className="flex flex-col justify-between gap-4 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center md:px-8">
 
@@ -90,16 +97,15 @@ export default function BookingCard({
 
       </div>
 
-      {/* Route */}
+      {/* ROUTE */}
 
       <div className="px-6 py-7 md:px-8">
 
         <div className="grid items-center gap-7 md:grid-cols-[1fr_180px_1fr]">
 
-          {/* Departure */}
+          {/* DEPARTURE */}
 
           <div>
-
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
               Departure
             </p>
@@ -120,10 +126,9 @@ export default function BookingCard({
             <p className="mt-1 text-xl font-bold text-orange-500">
               {formatTime(departure)}
             </p>
-
           </div>
 
-          {/* Center */}
+          {/* CENTER */}
 
           <div className="flex flex-col items-center">
 
@@ -155,7 +160,7 @@ export default function BookingCard({
 
           </div>
 
-          {/* Arrival */}
+          {/* ARRIVAL */}
 
           <div className="md:text-right">
 
@@ -184,7 +189,7 @@ export default function BookingCard({
 
         </div>
 
-        {/* Details */}
+        {/* DETAILS */}
 
         <div className="mt-8 grid gap-4 border-t border-slate-100 pt-7 sm:grid-cols-3">
 
@@ -197,8 +202,8 @@ export default function BookingCard({
           <BookingInfo
             icon={<Users size={18} />}
             label="Passengers"
-            value={`${booking.passengers} ${
-              booking.passengers === 1
+            value={`${booking.passengerCount} ${
+              booking.passengerCount === 1
                 ? "Passenger"
                 : "Passengers"
             }`}
@@ -207,8 +212,8 @@ export default function BookingCard({
           <BookingInfo
             icon={<CreditCard size={18} />}
             label="Total Fare"
-            value={`₹${booking.totalAmount.toLocaleString(
-              "en-IN"
+            value={`₹${totalAmount.toLocaleString(
+              "en-IN",
             )}`}
             highlight
           />
@@ -217,7 +222,7 @@ export default function BookingCard({
 
       </div>
 
-      {/* Footer */}
+      {/* FOOTER */}
 
       <div className="flex flex-col justify-between gap-4 border-t border-slate-100 bg-[#fafaf8] px-6 py-5 sm:flex-row sm:items-center md:px-8">
 

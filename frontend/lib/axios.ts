@@ -1,37 +1,3 @@
-// import axios from "axios";
-
-// const api = axios.create({
-//   baseURL: process.env.NEXT_PUBLIC_API_URL,
-//   withCredentials: true,
-// });
-
-// export default api;
-
-// import axios from "axios";
-
-// const api = axios.create({
-//   baseURL:
-//     process.env.NEXT_PUBLIC_API_URL ||
-//     "http://localhost:4000/api",
-//   headers: {
-//     "Content-Type": "application/json",
-//   },
-// });
-
-// api.interceptors.request.use((config) => {
-//   if (typeof window !== "undefined") {
-//     const token = localStorage.getItem("accessToken");
-
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
-//   }
-
-//   return config;
-// });
-
-// export default api;
-
 import axios, {
   AxiosError,
   InternalAxiosRequestConfig,
@@ -48,6 +14,11 @@ const api = axios.create({
   },
 });
 
+interface RetryRequest
+  extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
 /*
  * =====================================================
  * REQUEST INTERCEPTOR
@@ -55,26 +26,15 @@ const api = axios.create({
  */
 
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  (config) => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("accessToken");
-
-      console.log("========== AXIOS REQUEST ==========");
-      console.log("URL:", config.url);
-      console.log("ACCESS TOKEN EXISTS:", !!token);
-      console.log(
-        "ACCESS TOKEN:",
-        token ? `${token.substring(0, 20)}...` : null,
-      );
+      const token =
+        localStorage.getItem("accessToken");
 
       if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        config.headers.Authorization =
+          `Bearer ${token}`;
       }
-
-      console.log(
-        "AUTH HEADER:",
-        config.headers.Authorization,
-      );
     }
 
     return config;
@@ -83,51 +43,56 @@ api.interceptors.request.use(
 
 /*
  * =====================================================
- * RESPONSE INTERCEPTOR
+ * REFRESH STATE
  * =====================================================
  */
 
 let isRefreshing = false;
 
-let refreshSubscribers: ((
-  token: string,
-) => void)[] = [];
+let refreshSubscribers: Array<
+  (token: string) => void
+> = [];
 
-const subscribeTokenRefresh = (
+function subscribeTokenRefresh(
   callback: (token: string) => void,
-) => {
+) {
   refreshSubscribers.push(callback);
-};
+}
 
-const onRefreshed = (token: string) => {
+function onRefreshed(token: string) {
   refreshSubscribers.forEach(
     (callback) => callback(token),
   );
 
   refreshSubscribers = [];
-};
+}
+
+/*
+ * =====================================================
+ * RESPONSE INTERCEPTOR
+ * =====================================================
+ */
 
 api.interceptors.response.use(
   (response) => response,
 
   async (error: AxiosError) => {
     const originalRequest =
-      error.config as InternalAxiosRequestConfig & {
-        _retry?: boolean;
-      };
+      error.config as RetryRequest | undefined;
 
-    /*
-     * Only handle 401
-     */
-    if (
-      error.response?.status !== 401 ||
-      !originalRequest
-    ) {
+    if (!originalRequest) {
       return Promise.reject(error);
     }
 
     /*
-     * Don't refresh the refresh request itself
+     * Only refresh on 401
+     */
+    if (error.response?.status !== 401) {
+      return Promise.reject(error);
+    }
+
+    /*
+     * Never refresh the refresh request itself
      */
     if (
       originalRequest.url?.includes(
@@ -138,7 +103,7 @@ api.interceptors.response.use(
     }
 
     /*
-     * Prevent infinite retry
+     * Don't retry same request twice
      */
     if (originalRequest._retry) {
       return Promise.reject(error);
@@ -146,19 +111,17 @@ api.interceptors.response.use(
 
     originalRequest._retry = true;
 
+    /*
+     * Another request is already refreshing
+     */
     if (isRefreshing) {
-      /*
-       * Another request is already refreshing
-       */
       return new Promise((resolve) => {
         subscribeTokenRefresh(
           (newToken) => {
             originalRequest.headers.Authorization =
               `Bearer ${newToken}`;
 
-            resolve(
-              api(originalRequest),
-            );
+            resolve(api(originalRequest));
           },
         );
       });
@@ -174,48 +137,82 @@ api.interceptors.response.use(
 
       if (!refreshToken) {
         throw new Error(
-          "No refresh token available",
+          "Refresh token not found.",
+        );
+      }
+
+      console.log(
+        "ACCESS TOKEN EXPIRED → REFRESHING",
+      );
+
+      /*
+       * IMPORTANT:
+       * Use axios directly.
+       * Don't use api here.
+       */
+      const refreshResponse =
+        await axios.post(
+          `${API_URL}/auth/refresh`,
+          {
+            refreshToken,
+          },
+          {
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+          },
+        );
+
+      console.log(
+        "REFRESH RESPONSE:",
+        refreshResponse.data,
+      );
+
+      /*
+       * Support either:
+       *
+       * {
+       *   data: {
+       *     accessToken: "..."
+       *   }
+       * }
+       *
+       * or:
+       *
+       * {
+       *   accessToken: "..."
+       * }
+       */
+
+      const newAccessToken =
+        refreshResponse.data?.data
+          ?.accessToken ||
+        refreshResponse.data?.accessToken;
+
+      const newRefreshToken =
+        refreshResponse.data?.data
+          ?.refreshToken ||
+        refreshResponse.data?.refreshToken;
+
+      if (!newAccessToken) {
+        throw new Error(
+          "Refresh API did not return accessToken.",
         );
       }
 
       /*
-       * IMPORTANT:
-       * Use axios directly here instead of `api`
-       * so the interceptor does not intercept itself.
+       * Save new access token
        */
-      const response = await axios.post(
-        `${API_URL}/auth/refresh`,
-        {
-          refreshToken,
-        },
-        {
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-        },
-      );
-
-      const newAccessToken =
-        response.data?.data?.accessToken;
-
-      if (!newAccessToken) {
-        throw new Error(
-          "No access token returned",
-        );
-      }
-
       localStorage.setItem(
         "accessToken",
         newAccessToken,
       );
 
       /*
-       * If backend rotates refresh token
+       * Save rotated refresh token
+       * if backend returns one.
        */
-      const newRefreshToken =
-        response.data?.data?.refreshToken;
-
       if (newRefreshToken) {
         localStorage.setItem(
           "refreshToken",
@@ -223,8 +220,12 @@ api.interceptors.response.use(
         );
       }
 
+      console.log(
+        "NEW ACCESS TOKEN SAVED",
+      );
+
       /*
-       * Notify queued requests
+       * Release waiting requests
        */
       onRefreshed(newAccessToken);
 
@@ -236,8 +237,16 @@ api.interceptors.response.use(
 
       return api(originalRequest);
     } catch (refreshError) {
+      console.error(
+        "TOKEN REFRESH FAILED:",
+        refreshError,
+      );
+
       refreshSubscribers = [];
 
+      /*
+       * Clear authentication
+       */
       localStorage.removeItem(
         "accessToken",
       );
@@ -245,6 +254,8 @@ api.interceptors.response.use(
       localStorage.removeItem(
         "refreshToken",
       );
+
+      localStorage.removeItem("user");
 
       return Promise.reject(
         refreshError,
