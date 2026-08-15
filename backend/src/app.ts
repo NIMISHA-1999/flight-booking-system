@@ -26,14 +26,49 @@ app.use(
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
-  })
+  }),
 );
 
 app.use(helmet());
 app.use(morgan("dev"));
 
+/*
+ * =====================================================
+ * STRIPE WEBHOOK
+ * =====================================================
+ *
+ * IMPORTANT:
+ * This MUST come before express.json().
+ *
+ * Stripe requires the original/raw request body
+ * to verify the stripe-signature.
+ */
+app.use(
+  "/api/stripe/webhook",
+  express.raw({
+    type: "application/json",
+  }),
+);
+
+/*
+ * =====================================================
+ * NORMAL REQUEST BODY
+ * =====================================================
+ */
+
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+app.use(
+  express.urlencoded({
+    extended: true,
+  }),
+);
+
+/*
+ * =====================================================
+ * HEALTH
+ * =====================================================
+ */
 
 app.get("/", (_req, res) => {
   res.json({
@@ -41,6 +76,12 @@ app.get("/", (_req, res) => {
     message: "Flight Booking API",
   });
 });
+
+/*
+ * =====================================================
+ * API ROUTES
+ * =====================================================
+ */
 
 app.use("/api", routes);
 

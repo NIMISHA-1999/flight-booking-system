@@ -1,18 +1,47 @@
 import { Request, Response } from "express";
-import { stripe } from "../config/stripe";
-import { prisma } from "../config/database";
 import Stripe from "stripe";
+
+import { prisma } from "../config/database";
+import { stripe } from "../config/stripe";
 
 export const stripeWebhook = async (
   req: Request,
   res: Response,
 ) => {
-  const signature =
-    req.headers["stripe-signature"];
+  console.log("\n========================================");
+  console.log("🔥 STRIPE WEBHOOK RECEIVED");
+  console.log("========================================");
+
+  console.log("METHOD:", req.method);
+  console.log("URL:", req.originalUrl);
+  console.log("BODY TYPE:", typeof req.body);
+  console.log(
+    "BODY IS BUFFER:",
+    Buffer.isBuffer(req.body),
+  );
+
+  const signature = req.headers["stripe-signature"];
+
+  console.log(
+    "STRIPE SIGNATURE:",
+    signature ? "PRESENT" : "MISSING",
+  );
 
   if (!signature) {
+    console.error("❌ Missing Stripe signature");
+
     return res.status(400).send(
-      "Missing Stripe signature.",
+      "Missing Stripe signature",
+    );
+  }
+
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error(
+      "❌ STRIPE_WEBHOOK_SECRET is missing",
+    );
+
+    return res.status(500).send(
+      "Webhook secret missing",
     );
   }
 
@@ -22,46 +51,85 @@ export const stripeWebhook = async (
     event = stripe.webhooks.constructEvent(
       req.body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!,
+      process.env.STRIPE_WEBHOOK_SECRET,
     );
+
+    console.log(
+      "✅ WEBHOOK SIGNATURE VERIFIED",
+    );
+
+    console.log(
+      "EVENT ID:",
+      event.id,
+    );
+
+    console.log(
+      "EVENT TYPE:",
+      event.type,
+    );
+
   } catch (error) {
     console.error(
-      "STRIPE WEBHOOK SIGNATURE ERROR:",
+      "❌ STRIPE WEBHOOK SIGNATURE ERROR:",
       error,
     );
 
     return res.status(400).send(
-      "Invalid webhook signature.",
+      "Invalid webhook signature",
     );
   }
 
   try {
     switch (event.type) {
-      /*
-       * =========================================
-       * PAYMENT SUCCESS
-       * =========================================
-       */
 
       case "checkout.session.completed": {
+
+        console.log(
+          "\n🔥 checkout.session.completed",
+        );
+
         const session =
           event.data.object as Stripe.Checkout.Session;
+
+        console.log(
+          "SESSION ID:",
+          session.id,
+        );
+
+        console.log(
+          "PAYMENT STATUS:",
+          session.payment_status,
+        );
+
+        console.log(
+          "SESSION STATUS:",
+          session.status,
+        );
+
+        console.log(
+          "METADATA:",
+          session.metadata,
+        );
 
         const bookingId =
           session.metadata?.bookingId;
 
+        const userId =
+          session.metadata?.userId;
+
+        console.log(
+          "BOOKING ID:",
+          bookingId,
+        );
+
+        console.log(
+          "USER ID:",
+          userId,
+        );
+
         if (!bookingId) {
           console.error(
-            "Booking ID missing from Stripe session.",
-          );
-
-          break;
-        }
-
-        if (session.payment_status !== "paid") {
-          console.log(
-            "Checkout completed but payment is not paid:",
-            session.payment_status,
+            "❌ BOOKING ID NOT FOUND IN METADATA",
           );
 
           break;
@@ -74,83 +142,72 @@ export const stripeWebhook = async (
             },
           });
 
+        console.log(
+          "BOOKING FROM DATABASE:",
+          booking,
+        );
+
         if (!booking) {
           console.error(
-            "Booking not found:",
+            "❌ BOOKING NOT FOUND:",
             bookingId,
           );
 
           break;
         }
 
-        // Prevent duplicate webhook processing
+        console.log(
+          "CURRENT BOOKING STATUS:",
+          booking.status,
+        );
+
         if (booking.status === "CONFIRMED") {
+          console.log(
+            "ℹ️ Booking already CONFIRMED",
+          );
+
           break;
         }
 
-        await prisma.booking.update({
-          where: {
-            id: bookingId,
-          },
-          data: {
-            status: "CONFIRMED",
-          },
-        });
+        const updatedBooking =
+          await prisma.booking.update({
+            where: {
+              id: bookingId,
+            },
+            data: {
+              status: "CONFIRMED",
+            },
+          });
 
         console.log(
-          `Booking ${bookingId} confirmed.`,
+          "✅ BOOKING UPDATED",
+        );
+
+        console.log(
+          "NEW STATUS:",
+          updatedBooking.status,
+        );
+
+        console.log(
+          `🎉 Booking ${bookingId} → CONFIRMED`,
         );
 
         break;
       }
-
-      /*
-       * =========================================
-       * PAYMENT FAILED
-       * =========================================
-       */
-
-      case "payment_intent.payment_failed": {
-        const paymentIntent =
-          event.data.object as Stripe.PaymentIntent;
-
-        const bookingId =
-          paymentIntent.metadata?.bookingId;
-
-        if (!bookingId) {
-          break;
-        }
-
-        await prisma.booking.updateMany({
-          where: {
-            id: bookingId,
-            status: "PENDING",
-          },
-          data: {
-            status: "PAYMENT_FAILED",
-          },
-        });
-
-        console.log(
-          `Payment failed for booking ${bookingId}.`,
-        );
-
-        break;
-      }
-
-      /*
-       * =========================================
-       * CHECKOUT EXPIRED
-       * =========================================
-       */
 
       case "checkout.session.expired": {
+
         const session =
           event.data.object as Stripe.Checkout.Session;
 
         const bookingId =
           session.metadata?.bookingId;
 
+        console.log(
+          "Checkout expired:",
+          bookingId,
+        );
+
         if (!bookingId) {
           break;
         }
@@ -161,34 +218,65 @@ export const stripeWebhook = async (
             status: "PENDING",
           },
           data: {
-            status: "PAYMENT_FAILED",
+            status: "CANCELLED",
           },
         });
 
+        break;
+      }
+
+      case "payment_intent.payment_failed": {
+
+        const paymentIntent =
+          event.data.object as Stripe.PaymentIntent;
+
         console.log(
-          `Checkout expired for booking ${bookingId}.`,
+          "❌ PAYMENT FAILED",
+          paymentIntent.id,
+        );
+
+        console.log(
+          "METADATA:",
+          paymentIntent.metadata,
         );
 
         break;
       }
 
       default:
+
         console.log(
-          `Unhandled Stripe event: ${event.type}`,
+          "ℹ️ Unhandled Stripe event:",
+          event.type,
         );
     }
 
-    return res.json({
+    console.log(
+      "========================================",
+    );
+
+    console.log(
+      "✅ WEBHOOK COMPLETED",
+    );
+
+    console.log(
+      "========================================\n",
+    );
+
+    return res.status(200).json({
       received: true,
     });
+
   } catch (error) {
+
     console.error(
-      "STRIPE WEBHOOK ERROR:",
+      "❌ STRIPE WEBHOOK PROCESSING ERROR:",
       error,
     );
 
     return res.status(500).json({
-      message: "Webhook processing failed.",
+      message:
+        "Webhook processing failed",
     });
   }
 };
