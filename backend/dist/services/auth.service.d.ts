@@ -20,8 +20,8 @@ export declare class AuthService {
             email: string;
             role: import("../generated/prisma/enums").UserRole;
         };
-        accessToken: never;
-        refreshToken: never;
+        accessToken: string;
+        refreshToken: string;
     }>;
     /**
      * Login
@@ -34,8 +34,8 @@ export declare class AuthService {
             email: string;
             role: import("../generated/prisma/enums").UserRole;
         };
-        accessToken: never;
-        refreshToken: never;
+        accessToken: string;
+        refreshToken: string;
     }>;
     /**
      * Refresh access token.
@@ -44,8 +44,8 @@ export declare class AuthService {
      * a new refresh token is generated.
      */
     refresh(refreshToken: string): Promise<{
-        accessToken: never;
-        refreshToken: never;
+        accessToken: string;
+        refreshToken: string;
     }>;
     /**
      * Logout.

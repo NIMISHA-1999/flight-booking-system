@@ -57,3 +57,20 @@ export async function searchFlights(
 
   return result.data;
 }
+
+
+export async function getFlightById(
+  id: string
+): Promise<Flight> {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/flights/${id}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch flight");
+  }
+
+  const result = await response.json();
+
+  return result.data;
+}

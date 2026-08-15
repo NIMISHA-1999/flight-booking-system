@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../config/database";
+import flightService from "../services/flight.service";
 
 export async function getAllFlights(
   req: Request,
@@ -95,4 +96,39 @@ export async function searchFlights(
       message: "Failed to search flights",
     });
   }
+}
+
+export async function getFlightById(
+  req: Request,
+  res: Response
+) {
+  try {
+    const id = String(req.params.id);
+
+    const flight = await flightService.getFlightById(id);
+
+    return res.status(200).json({
+      success: true,
+      message: "Flight fetched successfully",
+      data: flight,
+    });
+  } catch (error) {
+    console.error("GET FLIGHT BY ID ERROR:", error);
+
+    if (
+      error instanceof Error &&
+      error.message === "Flight not found"
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: "Flight not found",
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch flight",
+    });
+  }
+
 }

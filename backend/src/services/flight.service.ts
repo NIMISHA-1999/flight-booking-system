@@ -8,8 +8,17 @@ interface SearchFlightsParams {
 }
 
 export class FlightService {
+  // =====================================================
+  // SEARCH FLIGHTS
+  // =====================================================
+
   async searchFlights(params: SearchFlightsParams) {
-    const { origin, destination, date, passengers = 1 } = params;
+    const {
+      origin,
+      destination,
+      date,
+      passengers = 1,
+    } = params;
 
     const where: any = {};
 
@@ -28,8 +37,13 @@ export class FlightService {
     }
 
     if (date) {
-      const startDate = new Date(`${date}T00:00:00.000Z`);
-      const endDate = new Date(`${date}T23:59:59.999Z`);
+      const startDate = new Date(
+        `${date}T00:00:00.000Z`
+      );
+
+      const endDate = new Date(
+        `${date}T23:59:59.999Z`
+      );
 
       where.departureAt = {
         gte: startDate,
@@ -37,12 +51,45 @@ export class FlightService {
       };
     }
 
+    // Only show flights with enough seats
     where.availableSeats = {
       gte: passengers,
     };
 
     const flights = await prisma.flight.findMany({
       where,
+      orderBy: {
+        departureAt: "asc",
+      },
+    });
+
+    return flights;
+  }
+
+  // =====================================================
+  // GET FLIGHT BY ID
+  // =====================================================
+
+  async getFlightById(id: string) {
+    const flight = await prisma.flight.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!flight) {
+      throw new Error("Flight not found");
+    }
+
+    return flight;
+  }
+
+  // =====================================================
+  // GET ALL FLIGHTS
+  // =====================================================
+
+  async getAllFlights() {
+    const flights = await prisma.flight.findMany({
       orderBy: {
         departureAt: "asc",
       },
