@@ -1,3 +1,5 @@
+// src/controllers/auth.controller.ts
+
 import { Request, Response } from "express";
 import authService from "../services/auth.service";
 
@@ -31,20 +33,27 @@ class AuthController {
         });
       }
 
-      const result = await authService.register({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim().toLowerCase(),
-        password,
-      });
+      const result =
+        await authService.register({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email
+            .trim()
+            .toLowerCase(),
+          password,
+        });
 
       return res.status(201).json({
         success: true,
-        message: "User registered successfully",
+        message:
+          "User registered successfully",
         data: result,
       });
     } catch (error) {
-      console.error("REGISTER ERROR:", error);
+      console.error(
+        "REGISTER ERROR:",
+        error,
+      );
 
       return res.status(400).json({
         success: false,
@@ -63,24 +72,53 @@ class AuthController {
    */
   async login(req: Request, res: Response) {
     try {
-      console.log("LOGIN BODY:", req.body);
+      console.log(
+        "LOGIN BODY:",
+        {
+          email: req.body?.email,
+          password:
+            req.body?.password
+              ? "***"
+              : undefined,
+        },
+      );
 
       const {
         email,
         password,
       } = req.body ?? {};
 
-      if (!email?.trim() || !password) {
+      if (
+        !email?.trim() ||
+        !password
+      ) {
         return res.status(400).json({
           success: false,
-          message: "Email and password are required",
+          message:
+            "Email and password are required",
         });
       }
 
-      const result = await authService.login({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+      const result =
+        await authService.login({
+          email: email
+            .trim()
+            .toLowerCase(),
+          password,
+        });
+
+      console.log(
+        "LOGIN SUCCESS:",
+        {
+          userId: result.user?.id,
+          email: result.user?.email,
+          role: result.user?.role,
+          hasAccessToken:
+            !!result.accessToken,
+          hasRefreshToken:
+            !!result.refreshToken,
+        },
+      );
 
       return res.status(200).json({
         success: true,
@@ -88,7 +126,10 @@ class AuthController {
         data: result,
       });
     } catch (error) {
-      console.error("LOGIN ERROR:", error);
+      console.error(
+        "LOGIN ERROR:",
+        error,
+      );
 
       return res.status(401).json({
         success: false,
@@ -102,10 +143,13 @@ class AuthController {
 
   /**
    * =====================================================
-   * REFRESH ACCESS TOKEN
+   * REFRESH
    * =====================================================
    */
-  async refresh(req: Request, res: Response) {
+  async refresh(
+    req: Request,
+    res: Response,
+  ) {
     try {
       const {
         refreshToken,
@@ -113,11 +157,13 @@ class AuthController {
 
       if (
         !refreshToken ||
-        typeof refreshToken !== "string"
+        typeof refreshToken !==
+          "string"
       ) {
         return res.status(400).json({
           success: false,
-          message: "Refresh token is required",
+          message:
+            "Refresh token is required",
         });
       }
 
@@ -128,11 +174,15 @@ class AuthController {
 
       return res.status(200).json({
         success: true,
-        message: "Token refreshed successfully",
+        message:
+          "Token refreshed successfully",
         data: result,
       });
     } catch (error) {
-      console.error("REFRESH ERROR:", error);
+      console.error(
+        "REFRESH ERROR:",
+        error,
+      );
 
       return res.status(401).json({
         success: false,
@@ -149,7 +199,10 @@ class AuthController {
    * LOGOUT
    * =====================================================
    */
-  async logout(req: Request, res: Response) {
+  async logout(
+    req: Request,
+    res: Response,
+  ) {
     try {
       const {
         refreshToken,
@@ -157,11 +210,13 @@ class AuthController {
 
       if (
         !refreshToken ||
-        typeof refreshToken !== "string"
+        typeof refreshToken !==
+          "string"
       ) {
         return res.status(400).json({
           success: false,
-          message: "Refresh token is required",
+          message:
+            "Refresh token is required",
         });
       }
 
@@ -174,7 +229,10 @@ class AuthController {
         message: "Logout successful",
       });
     } catch (error) {
-      console.error("LOGOUT ERROR:", error);
+      console.error(
+        "LOGOUT ERROR:",
+        error,
+      );
 
       return res.status(400).json({
         success: false,

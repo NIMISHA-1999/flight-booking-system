@@ -5,6 +5,7 @@ import bookingRoutes from "./booking.routes";
 import paymentRoutes from "./payment.routes";
 import stripeWebhookRoutes from "./stripe-webhook.routes";
 import cancellationRoutes from "./cancellation.routes";
+import adminRoutes from "./admin.routes";
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use("/bookings", bookingRoutes);
 router.use("/payments", paymentRoutes);
 // router.use("/stripe", stripeWebhookRoutes);
 router.use("/bookings", cancellationRoutes);
+router.use("/admin", adminRoutes);
 
 export default router;
