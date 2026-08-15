@@ -8,11 +8,11 @@ export declare class BookingController {
     /**
      * GET /api/bookings/:bookingId
      */
-    getBooking(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    getBooking(req: AuthenticatedRequest, res: Response): Promise<Response<any, Record<string, any>>>;
     /**
      * GET /api/bookings
      */
-    getMyBookings(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    getMyBookings(req: AuthenticatedRequest, res: Response): Promise<Response<any, Record<string, any>>>;
 }
 export declare const bookingController: BookingController;
 //# sourceMappingURL=booking.controller.d.ts.map

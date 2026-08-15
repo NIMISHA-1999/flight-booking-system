@@ -95,8 +95,8 @@ export declare class BookingService {
             status: import("../generated/prisma/enums").PaymentStatus;
             stripePaymentIntentId: string;
             bookingId: string;
-            amount: import("@prisma/client-runtime-utils").Decimal;
             currency: string;
+            amount: import("@prisma/client-runtime-utils").Decimal;
             paidAt: Date | null;
             refundedAt: Date | null;
         } | null;
@@ -148,8 +148,8 @@ export declare class BookingService {
             status: import("../generated/prisma/enums").PaymentStatus;
             stripePaymentIntentId: string;
             bookingId: string;
-            amount: import("@prisma/client-runtime-utils").Decimal;
             currency: string;
+            amount: import("@prisma/client-runtime-utils").Decimal;
             paidAt: Date | null;
             refundedAt: Date | null;
         } | null;

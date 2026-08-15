@@ -1,0 +1,72 @@
+import { Response } from "express";
+
+import { paymentService } from "../services/payment.service";
+
+import { AuthenticatedRequest } from "../types/auth.types";
+
+export const createCheckoutSession = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  try {
+    const { bookingId } = req.body;
+    const userId = req.user?.userId;
+
+    console.log("================================");
+    console.log("CREATE CHECKOUT SESSION");
+    console.log("BODY:", req.body);
+    console.log("BOOKING ID:", bookingId);
+    console.log("USER ID:", userId);
+    console.log("================================");
+
+    if (!bookingId) {
+      return res.status(400).json({
+        message: "Booking ID is required.",
+      });
+    }
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Authentication required.",
+      });
+    }
+
+    const session =
+      await paymentService.createCheckoutSession(
+        bookingId,
+        userId,
+      );
+
+    console.log(
+      "STRIPE SESSION CREATED:",
+      session.id,
+    );
+
+    return res.status(200).json({
+      success: true,
+      url: session.url,
+      sessionId: session.id,
+    });
+  } catch (error) {
+    console.error(
+      "================================",
+    );
+
+    console.error(
+      "CREATE CHECKOUT SESSION ERROR:",
+      error,
+    );
+
+    console.error(
+      "================================",
+    );
+
+    return res.status(400).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to create checkout session.",
+    });
+  }
+};

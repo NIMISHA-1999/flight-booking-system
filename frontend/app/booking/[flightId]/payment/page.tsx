@@ -384,6 +384,10 @@ import {
 } from "next/navigation";
 
 import {
+  createCheckoutSession,
+} from "@/services/payment.service";
+
+import {
   ArrowLeft,
   CreditCard,
   Plane,
@@ -480,39 +484,30 @@ export default function PaymentPage() {
    */
 
   const handlePayment = async () => {
-    if (!booking) {
-      return;
-    }
+  if (!bookingId) {
+    setError("Booking ID is missing.");
+    return;
+  }
 
-    try {
-      setPaymentLoading(true);
+  try {
+    setPaymentLoading(true);
+    setError("");
 
-      /*
-       * Later:
-       *
-       * const response =
-       *   await createCheckoutSession(
-       *     booking.id
-       *   );
-       *
-       * window.location.href =
-       *   response.url;
-       */
+    const response = await createCheckoutSession(bookingId);
 
-      console.log(
-        "START PAYMENT:",
-        booking.id,
-      );
+    window.location.href = response.url;
+  } catch (error) {
+    console.error("PAYMENT ERROR:", error);
 
-    } catch (error) {
-      console.error(
-        "PAYMENT ERROR:",
-        error,
-      );
-    } finally {
-      setPaymentLoading(false);
-    }
-  };
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Unable to start payment.",
+    );
+  } finally {
+    setPaymentLoading(false);
+  }
+};
 
   /*
    * ==========================================
