@@ -96,7 +96,13 @@ export const getAdminFlights = async (
   const response = await api.get(
     "/admin/flights",
     {
-      params,
+      params: {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? 10,
+        search:
+          params?.search?.trim() ||
+          undefined,
+      },
     },
   );
 
@@ -139,9 +145,6 @@ export const createFlight = async (
 /*
  * =====================================================
  * UPDATE FLIGHT
- *
- * IMPORTANT:
- * Backend uses PATCH, not PUT.
  * =====================================================
  */
 
@@ -200,50 +203,81 @@ export const updateFlightInventory = async (
  * =====================================================
  */
 
+/*
+ * =====================================================
+ * BOOKINGS
+ * =====================================================
+ */
+
+export type AdminBookingStatus =
+  | "PENDING"
+  | "CONFIRMED"
+  | "CANCELLED"
+  | "PAYMENT_FAILED"
+  | "REFUNDED"
+  | "FAILED";
+
 export interface AdminBooking {
   id: string;
 
   bookingReference: string;
 
-  status:
-    | "PENDING"
-    | "CONFIRMED"
-    | "CANCELLED"
-    | "FAILED";
+  status: AdminBookingStatus;
 
   totalAmount: number;
 
   createdAt: string;
 
+  /*
+   * =====================================================
+   * USER
+   * =====================================================
+   */
+
   user?: {
     id: string;
 
-    /*
-     * Backend currently returns `name`,
-     * not firstName / lastName.
-     */
-    name: string;
+    firstName?: string | null;
+    lastName?: string | null;
 
-    email: string;
-  };
+    email?: string | null;
+
+    role?: string | null;
+  } | null;
+
+  /*
+   * =====================================================
+   * FLIGHT
+   * =====================================================
+   */
 
   flight: {
     id: string;
 
     flightNumber: string;
+
     airline: string;
 
     origin: string;
+
     destination: string;
 
     departureAt: string;
+
     arrivalAt: string;
 
     fare?: number;
 
     totalSeats?: number;
+
     availableSeats?: number;
   };
+
+  /*
+   * =====================================================
+   * PASSENGERS
+   * =====================================================
+   */
 
   passengers?: Array<{
     id: string;
@@ -261,20 +295,152 @@ export interface AdminBooking {
     contactNumber: string;
   }>;
 
-  payments?: Array<{
+  /*
+   * =====================================================
+   * PAYMENT
+   * =====================================================
+   *
+   * IMPORTANT:
+   *
+   * Backend returns:
+   *
+   * payment
+   *
+   * NOT:
+   *
+   * payments
+   *
+   * =====================================================
+   */
+
+  payment?: {
     id: string;
 
     amount: number;
+
+    currency?: string | null;
 
     status: string;
 
     stripePaymentIntentId?: string | null;
 
-    stripeRefundId?: string | null;
+    paidAt?: string | null;
 
     refundedAt?: string | null;
-  }>;
+  } | null;
 }
+
+/*
+ * =====================================================
+ * BOOKINGS RESPONSE
+ * =====================================================
+ */
+
+export interface AdminBookingsResponse {
+  success?: boolean;
+
+  count?: number;
+
+  bookings: AdminBooking[];
+
+  pagination?: {
+    page: number;
+
+    limit: number;
+
+    total: number;
+
+    totalPages: number;
+  };
+}
+
+/*
+ * =====================================================
+ * GET BOOKINGS
+ * =====================================================
+ */
+
+export const getAdminBookings = async (
+  params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    date?: string;
+    origin?: string;
+    destination?: string;
+  },
+): Promise<AdminBookingsResponse> => {
+  const response = await api.get(
+    "/admin/bookings",
+    {
+      params: {
+        page: params?.page ?? 1,
+
+        limit: params?.limit ?? 10,
+
+        status:
+          params?.status || undefined,
+
+        date:
+          params?.date || undefined,
+
+        origin:
+          params?.origin?.trim() ||
+          undefined,
+
+        destination:
+          params?.destination?.trim() ||
+          undefined,
+      },
+    },
+  );
+
+  return response.data;
+};
+
+/*
+ * =====================================================
+ * GET SINGLE BOOKING
+ * =====================================================
+ */
+
+export const getAdminBooking = async (
+  id: string,
+): Promise<AdminBooking> => {
+  const response = await api.get(
+    `/admin/bookings/${id}`,
+  );
+
+  return response.data.booking;
+};
+
+/*
+ * =====================================================
+ * CANCEL BOOKING
+ * =====================================================
+ */
+
+export interface CancelBookingResponse {
+  success: boolean;
+
+  message: string;
+
+  booking?: AdminBooking;
+
+  refundId?: string | null;
+
+  code?: string;
+}
+
+export const cancelAdminBooking = async (
+  id: string,
+): Promise<CancelBookingResponse> => {
+  const response = await api.patch(
+    `/admin/bookings/${id}/cancel`,
+  );
+
+  return response.data;
+};
 
 export interface AdminBookingsResponse {
   success?: boolean;
@@ -297,58 +463,83 @@ export interface AdminBookingsResponse {
  * =====================================================
  */
 
-export const getAdminBookings =
-  async (
-    params?: {
-      page?: number;
-      limit?: number;
-      status?: string;
-      date?: string;
-      origin?: string;
-      destination?: string;
-    },
-  ): Promise<AdminBookingsResponse> => {
-    const response = await api.get(
-      "/admin/bookings",
-      {
-        params,
-      },
-    );
+// export const getAdminBookings =
+//   async (
+//     params?: {
+//       page?: number;
+//       limit?: number;
+//       status?: string;
+//       date?: string;
+//       origin?: string;
+//       destination?: string;
+//     },
+//   ): Promise<AdminBookingsResponse> => {
+//     const response = await api.get(
+//       "/admin/bookings",
+//       {
+//         params,
+//       },
+//     );
 
-    return response.data;
-  };
+//     return response.data;
+//   };
 
-/*
- * =====================================================
- * GET SINGLE BOOKING
- * =====================================================
- */
+// /*
+//  * =====================================================
+//  * GET SINGLE BOOKING
+//  * =====================================================
+//  */
 
-export const getAdminBooking = async (
-  id: string,
-): Promise<AdminBooking> => {
-  const response = await api.get(
-    `/admin/bookings/${id}`,
-  );
+// export const getAdminBooking = async (
+//   id: string,
+// ): Promise<AdminBooking> => {
+//   const response = await api.get(
+//     `/admin/bookings/${id}`,
+//   );
 
-  return response.data.booking;
-};
+//   return response.data.booking;
+// };
 
-/*
- * =====================================================
- * ADMIN CANCEL BOOKING
- *
- * IMPORTANT:
- * Backend uses PATCH.
- * =====================================================
- */
+// /*
+//  * =====================================================
+//  * ADMIN CANCEL BOOKING
+//  * =====================================================
+//  *
+//  * Backend:
+//  *
+//  * PATCH /admin/bookings/:bookingId/cancel
+//  *
+//  * This endpoint:
+//  *
+//  * 1. Finds booking
+//  * 2. Checks payment
+//  * 3. Refunds Stripe payment if required
+//  * 4. Releases flight seats
+//  * 5. Changes booking status to CANCELLED
+//  * 6. Changes payment status to REFUNDED
+//  *
+//  * =====================================================
+//  */
 
-export const cancelAdminBooking = async (
-  id: string,
-) => {
-  const response = await api.patch(
-    `/admin/bookings/${id}/cancel`,
-  );
+// export interface CancelBookingResponse {
+//   success: boolean;
 
-  return response.data;
-};
+//   message: string;
+
+//   booking?: AdminBooking;
+
+//   refundId?: string | null;
+
+//   code?: string;
+// }
+
+// export const cancelAdminBooking =
+//   async (
+//     id: string,
+//   ): Promise<CancelBookingResponse> => {
+//     const response = await api.patch(
+//       `/admin/bookings/${id}/cancel`,
+//     );
+
+//     return response.data;
+//   };

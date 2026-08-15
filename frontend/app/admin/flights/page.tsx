@@ -1229,7 +1229,7 @@ export default function AdminFlightsPage() {
                   }
                 }}
                 placeholder="Search flight, airline or route..."
-                className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-black placeholder:text-slate-400 caret-black outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
               />
 
             </div>
