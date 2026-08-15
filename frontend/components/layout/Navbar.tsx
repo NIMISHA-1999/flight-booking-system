@@ -61,7 +61,7 @@ export default function Navbar({ user }: NavbarProps) {
           </Link>
 
           <Link
-            href="/bookings"
+            href="/mybookings"
             className="font-medium hover:text-orange-400"
           >
             My Bookings
