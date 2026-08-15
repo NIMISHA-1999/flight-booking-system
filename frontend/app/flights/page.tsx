@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -27,6 +28,8 @@ interface UserData {
   role: string;
 }
 
+const FLIGHTS_PER_PAGE = 5;
+
 export default function FlightsPage() {
   const searchParams = useSearchParams();
 
@@ -35,6 +38,9 @@ export default function FlightsPage() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
 
   const origin = searchParams.get("origin") || "";
   const destination = searchParams.get("destination") || "";
@@ -72,15 +78,11 @@ export default function FlightsPage() {
 
         let result: Flight[];
 
-        // No search parameters
-        // GET /api/flight
         if (!origin && !destination && !date) {
           console.log("Fetching all flights...");
 
           result = await getAllFlights();
         } else {
-          // Search parameters
-          // GET /api/flight/search
           console.log("Searching flights...", {
             origin,
             destination,
@@ -99,28 +101,58 @@ export default function FlightsPage() {
         console.log("FLIGHTS:", result);
 
         setFlights(result);
+
+        // Reset pagination when search changes
+        setCurrentPage(1);
       } catch (err) {
         console.error("FLIGHT FETCH ERROR:", err);
 
-        setError(
-          "Unable to load flights. Please try again."
-        );
+        setError("Unable to load flights. Please try again.");
       } finally {
         setLoading(false);
       }
     }
 
     loadFlights();
-  }, [
-    origin,
-    destination,
-    date,
-    passengers,
-  ]);
+  }, [origin, destination, date, passengers]);
+
+  // =====================================================
+  // PAGINATION
+  // =====================================================
+
+  const totalPages = Math.ceil(
+    flights.length / FLIGHTS_PER_PAGE
+  );
+
+  const startIndex =
+    (currentPage - 1) * FLIGHTS_PER_PAGE;
+
+  const endIndex =
+    startIndex + FLIGHTS_PER_PAGE;
+
+  const currentFlights = flights.slice(
+    startIndex,
+    endIndex
+  );
 
   const hasSearch = Boolean(
     origin || destination || date
   );
+
+  // =====================================================
+  // PAGE CHANGE
+  // =====================================================
+
+  const goToPage = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+
+    setCurrentPage(page);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -135,9 +167,7 @@ export default function FlightsPage() {
           HEADER
       ===================================================== */}
 
-      <FlightHeader
-        hasSearch={hasSearch}
-      />
+      <FlightHeader hasSearch={hasSearch} />
 
       {/* =====================================================
           CONTENT
@@ -177,28 +207,109 @@ export default function FlightsPage() {
         {!loading &&
           !error &&
           flights.length > 0 && (
-            <div className="space-y-5">
+            <>
+              {/* Result heading */}
 
-              <div className="mb-5">
-                <h2 className="text-2xl font-bold text-slate-900">
-                  {flights.length}{" "}
-                  {flights.length === 1
-                    ? "Flight"
-                    : "Flights"}{" "}
-                  Available
-                </h2>
+              <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    {flights.length}{" "}
+                    {flights.length === 1
+                      ? "Flight"
+                      : "Flights"}{" "}
+                    Available
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Showing {startIndex + 1}–
+                    {Math.min(
+                      endIndex,
+                      flights.length
+                    )}{" "}
+                    of {flights.length} flights
+                  </p>
+                </div>
+
+                {totalPages > 1 && (
+                  <p className="text-sm font-medium text-slate-500">
+                    Page {currentPage} of {totalPages}
+                  </p>
+                )}
               </div>
 
-              {flights.map((flight) => (
-                <FlightCard
-                  key={flight.id}
-                  flight={flight}
-                />
-              ))}
+              {/* Flight cards */}
 
-            </div>
+              <div className="space-y-5">
+                {currentFlights.map((flight) => (
+                  <FlightCard
+                    key={flight.id}
+                    flight={flight}
+                  />
+                ))}
+              </div>
+
+              {/* =================================================
+                  PAGINATION
+              ================================================= */}
+
+              {totalPages > 1 && (
+                <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+
+                  {/* Previous */}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      goToPage(currentPage - 1)
+                    }
+                    disabled={currentPage === 1}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:text-slate-700"
+                  >
+                    <ChevronLeft size={18} />
+                    Previous
+                  </button>
+
+                  {/* Page numbers */}
+
+                  <div className="flex items-center gap-2">
+                    {Array.from(
+                      { length: totalPages },
+                      (_, index) => index + 1
+                    ).map((page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => goToPage(page)}
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold transition ${
+                          currentPage === page
+                            ? "bg-blue-700 text-white shadow-md shadow-blue-700/20"
+                            : "border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Next */}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      goToPage(currentPage + 1)
+                    }
+                    disabled={
+                      currentPage === totalPages
+                    }
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:text-slate-700"
+                  >
+                    Next
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              )}
+            </>
           )}
-
       </section>
 
       {/* =====================================================
@@ -206,7 +317,6 @@ export default function FlightsPage() {
       ===================================================== */}
 
       <Footer />
-
     </main>
   );
 }
