@@ -9,35 +9,71 @@ export interface PassengerData {
   contactNumber: string;
 }
 
-export interface CreateBookingRequest {
-  flightId: string;
-  passengers: PassengerData[];
+export interface BookingFlight {
+  id: string;
+  airline: string;
+  flightNumber: string;
+  origin: string;
+  destination: string;
+  departureAt: string;
+  arrivalAt: string;
+  fare: number;
 }
 
-export interface BookingData {
+export interface BookingPassenger
+  extends PassengerData {
+  id: string;
+}
+
+export interface Booking {
   id: string;
   bookingReference: string;
   flightId: string;
   passengerCount: number;
-  totalAmount: string | number;
+  totalAmount: number;
   status: string;
+  flight: BookingFlight;
+  passengers: BookingPassenger[];
 }
 
 export interface CreateBookingResponse {
   success: boolean;
   message: string;
-  booking: BookingData;
-  bookingId?: string;
-  checkoutUrl?: string | null;
-  passengers: PassengerData[];
+  booking: Booking;
+  passengers: BookingPassenger[];
 }
 
-export async function createBooking(
-  data: CreateBookingRequest,
-): Promise<CreateBookingResponse> {
-  console.log("CREATE BOOKING USING AXIOS");
+export interface GetBookingResponse {
+  success: boolean;
+  booking: Booking;
+}
 
-  const response = await api.post("/bookings", data);
+/**
+ * Create booking
+ */
+export async function createBooking(data: {
+  flightId: string;
+  passengers: PassengerData[];
+}) {
+  const response =
+    await api.post<CreateBookingResponse>(
+      "/bookings",
+      data,
+    );
 
   return response.data;
+}
+
+/**
+ * Get booking
+ */
+export async function getBookingById(
+  bookingId: string,
+) {
+  const response =
+    await api.get<GetBookingResponse>(
+      `/bookings/${bookingId}`,
+    );
+
+  return response.data.booking;
 }

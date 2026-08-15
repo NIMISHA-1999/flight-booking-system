@@ -2,9 +2,7 @@ import { Response } from "express";
 
 import { bookingService } from "../services/booking.service";
 
-import {
-  AuthenticatedRequest,
-} from "../types/auth.types";
+import { AuthenticatedRequest } from "../types/auth.types";
 
 export class BookingController {
   /**
@@ -15,34 +13,21 @@ export class BookingController {
     res: Response,
   ) {
     try {
-      console.log(
-        "\n========== CREATE BOOKING ==========",
-      );
+      const userId = req.user?.userId;
 
-      console.log("USER:", req.user);
-      console.log("BODY:", req.body);
-
-      if (!req.user) {
+      if (!userId) {
         return res.status(401).json({
           success: false,
-          message:
-            "Authentication required.",
+          message: "Authentication required.",
         });
       }
 
-      const userId =
-        req.user.userId;
-
-      const {
-        flightId,
-        passengers,
-      } = req.body;
+      const { flightId, passengers } = req.body;
 
       if (!flightId) {
         return res.status(400).json({
           success: false,
-          message:
-            "Flight ID is required.",
+          message: "Flight ID is required.",
         });
       }
 
@@ -57,11 +42,6 @@ export class BookingController {
         });
       }
 
-      console.log(
-        "Creating booking for user:",
-        userId,
-      );
-
       const booking =
         await bookingService.createBooking(
           userId,
@@ -73,31 +53,21 @@ export class BookingController {
 
       return res.status(201).json({
         success: true,
-
         message:
           "Booking created successfully.",
-
         booking: {
           id: booking.id,
-
           bookingReference:
             booking.bookingReference,
-
-          flightId:
-            booking.flightId,
-
+          flightId: booking.flightId,
           passengerCount:
             booking.passengerCount,
-
           totalAmount:
             booking.totalAmount,
-
-          status:
-            booking.status,
+          status: booking.status,
+          flight: booking.flight,
         },
-
-        passengers:
-          booking.passengers,
+        passengers: booking.passengers,
       });
     } catch (error) {
       console.error(
@@ -105,14 +75,12 @@ export class BookingController {
         error,
       );
 
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Unable to create booking.";
-
       return res.status(400).json({
         success: false,
-        message,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to create booking.",
       });
     }
   }
@@ -125,7 +93,9 @@ export class BookingController {
     res: Response,
   ) {
     try {
-      if (!req.user) {
+      const userId = req.user?.userId;
+
+      if (!userId) {
         return res.status(401).json({
           success: false,
           message:
@@ -133,11 +103,9 @@ export class BookingController {
         });
       }
 
-      const userId =
-        req.user.userId;
-
-      const bookingId =
-        String(req.params.bookingId);
+      const bookingId = String(
+        req.params.bookingId,
+      );
 
       const booking =
         await bookingService.getBookingById(
@@ -173,16 +141,15 @@ export class BookingController {
     res: Response,
   ) {
     try {
-      if (!req.user) {
+      const userId = req.user?.userId;
+
+      if (!userId) {
         return res.status(401).json({
           success: false,
           message:
             "Authentication required.",
         });
       }
-
-      const userId =
-        req.user.userId;
 
       const bookings =
         await bookingService.getUserBookings(
