@@ -1,100 +1,167 @@
 import { prisma } from "../config/database";
-import { stripe } from "../config/stripe";
 
 export class CancellationService {
-
   async cancelBooking(
     bookingId: string,
     userId: string,
-    isAdmin = false,
+    isAdmin: boolean = false,
   ) {
+    /*
+     * Find booking
+     */
     const booking =
       await prisma.booking.findFirst({
-        where: {
-          id: bookingId,
-          ...(isAdmin ? {} : { userId }),
-        },
+        where: isAdmin
+          ? {
+              id: bookingId,
+            }
+          : {
+              id: bookingId,
+              userId,
+            },
+
         include: {
           flight: true,
+          payment: true,
+          passengers: true,
         },
       });
 
     if (!booking) {
-      throw new Error("Booking not found.");
-    }
-
-    if (booking.status !== "CONFIRMED") {
       throw new Error(
-        "Only confirmed bookings can be cancelled.",
+        "Booking not found.",
       );
     }
 
     /*
-     * USER CANCELLATION POLICY
+     * Already cancelled
+     */
+    if (booking.status === "CANCELLED") {
+      throw new Error(
+        "Booking is already cancelled.",
+      );
+    }
+
+    /*
+     * Only these statuses can be cancelled
+     */
+    if (
+      booking.status !== "PENDING" &&
+      booking.status !== "CONFIRMED"
+    ) {
+      throw new Error(
+        `Booking with status ${booking.status} cannot be cancelled.`,
+      );
+    }
+
+    /*
+     * Check flight departure
+     */
+    const now = new Date();
+
+    if (
+      new Date(
+        booking.flight.departureAt,
+      ) <= now
+    ) {
+      throw new Error(
+        "This booking cannot be cancelled because the flight has already departed.",
+      );
+    }
+
+    /*
+     * Transaction
      *
-     * Admin can cancel anytime.
-     * Users must cancel at least 24 hours
-     * before departure.
+     * 1. Cancel booking
+     * 2. Restore seats
      */
+    const cancelledBooking =
+      await prisma.$transaction(
+        async (tx) => {
+          /*
+           * Update booking
+           */
+          const updatedBooking =
+            await tx.booking.update({
+              where: {
+                id: booking.id,
+              },
 
-    if (!isAdmin) {
-      const now = new Date();
+              data: {
+                status: "CANCELLED",
+              },
 
-      const departure =
-        new Date(booking.flight.departureAt);
+              include: {
+                flight: true,
+                passengers: true,
+                payment: true,
+              },
+            });
 
-      const hoursUntilDeparture =
-        (departure.getTime() - now.getTime()) /
-        (1000 * 60 * 60);
+          /*
+           * Restore seats
+           */
+          await tx.flight.update({
+            where: {
+              id: booking.flightId,
+            },
 
-      if (hoursUntilDeparture < 24) {
-        throw new Error(
-          "Cancellation is only allowed at least 24 hours before departure.",
-        );
-      }
-    }
+            data: {
+              availableSeats: {
+                increment:
+                  booking.passengerCount,
+              },
+            },
+          });
 
-    /*
-     * REFUND
-     */
-
-    if (booking.stripePaymentId) {
-      await stripe.refunds.create({
-        payment_intent:
-          booking.stripePaymentId,
-      });
-    }
-
-    /*
-     * RELEASE SEATS
-     */
-
-    await prisma.$transaction([
-      prisma.booking.update({
-        where: {
-          id: booking.id,
+          return updatedBooking;
         },
-        data: {
-          status: "CANCELLED",
-        },
-      }),
+      );
 
-      prisma.flight.update({
-        where: {
-          id: booking.flightId,
-        },
-        data: {
-          availableSeats: {
-            increment: booking.passengerCount,
-          },
-        },
-      }),
-    ]);
+    console.log(
+      "====================================",
+    );
+
+    console.log(
+      "✅ BOOKING CANCELLED",
+    );
+
+    console.log(
+      "Booking ID:",
+      booking.id,
+    );
+
+    console.log(
+      "Booking Reference:",
+      booking.bookingReference,
+    );
+
+    console.log(
+      "Passengers:",
+      booking.passengerCount,
+    );
+
+    console.log(
+      "Previous Status:",
+      booking.status,
+    );
+
+    console.log(
+      "New Status:",
+      cancelledBooking.status,
+    );
+
+    console.log(
+      "====================================",
+    );
 
     return {
       success: true,
+
       message:
-        "Booking cancelled and refund initiated.",
+        "Booking cancelled successfully.",
+
+      booking: cancelledBooking,
     };
   }
 }

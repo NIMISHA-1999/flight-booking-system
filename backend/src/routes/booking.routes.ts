@@ -3,6 +3,7 @@ import { Router } from "express";
 import { bookingController } from "../controllers/booking.controller";
 
 import { authMiddleware } from "../middleware/auth.middleware";
+import { cancelBooking } from "../controllers/cancellation.controller";
 
 const router = Router();
 
@@ -32,5 +33,11 @@ router.get(
   authMiddleware,
   bookingController.getBooking.bind(bookingController),
 );
+
+// Cancel booking
+//
+//PATCH /api/bookings/:bookingId/cancel
+
+router.patch("/:bookingId/cancel", authMiddleware, cancelBooking);
 
 export default router;

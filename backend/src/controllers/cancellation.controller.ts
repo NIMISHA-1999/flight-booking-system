@@ -18,6 +18,31 @@ export const cancelBooking = async (
       });
     }
 
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: "Booking ID is required.",
+      });
+    }
+
+    console.log(
+      "====================================",
+    );
+
+    console.log(
+      "CANCEL BOOKING REQUEST",
+    );
+
+    console.log(
+      "Booking ID:",
+      bookingId,
+    );
+
+    console.log(
+      "User ID:",
+      userId,
+    );
+
     const result =
       await cancellationService.cancelBooking(
         bookingId,
@@ -26,7 +51,6 @@ export const cancelBooking = async (
       );
 
     return res.status(200).json(result);
-
   } catch (error) {
     console.error(
       "CANCEL BOOKING ERROR:",
