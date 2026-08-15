@@ -3,19 +3,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  Plane,
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Plane, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
-import BookingCard, {
-  Booking,
-} from "@/components/mybookings/BookingCard";
+import BookingCard, { Booking } from "@/components/mybookings/BookingCard";
 
 import BookingsHeader from "@/components/mybookings/BookingsHeader";
 
@@ -56,17 +49,13 @@ const ITEMS_PER_PAGE = 5;
  */
 
 export default function MyBookingsPage() {
-  const [user, setUser] =
-    useState<UserData | null>(null);
+  const [user, setUser] = useState<UserData | null>(null);
 
-  const [bookings, setBookings] =
-    useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [error, setError] =
-    useState("");
+  const [error, setError] = useState("");
 
   /*
    * ===================================================
@@ -74,8 +63,7 @@ export default function MyBookingsPage() {
    * ===================================================
    */
 
-  const [currentPage, setCurrentPage] =
-    useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
 
   /*
    * ===================================================
@@ -83,9 +71,7 @@ export default function MyBookingsPage() {
    * ===================================================
    */
 
-  const totalPages = Math.ceil(
-    bookings.length / ITEMS_PER_PAGE,
-  );
+  const totalPages = Math.ceil(bookings.length / ITEMS_PER_PAGE);
 
   /*
    * ===================================================
@@ -94,16 +80,11 @@ export default function MyBookingsPage() {
    */
 
   const paginatedBookings = useMemo(() => {
-    const startIndex =
-      (currentPage - 1) * ITEMS_PER_PAGE;
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
 
-    const endIndex =
-      startIndex + ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
 
-    return bookings.slice(
-      startIndex,
-      endIndex,
-    );
+    return bookings.slice(startIndex, endIndex);
   }, [bookings, currentPage]);
 
   /*
@@ -115,11 +96,7 @@ export default function MyBookingsPage() {
   const pageNumbers = useMemo(() => {
     const pages: number[] = [];
 
-    for (
-      let page = 1;
-      page <= totalPages;
-      page++
-    ) {
+    for (let page = 1; page <= totalPages; page++) {
       pages.push(page);
     }
 
@@ -146,22 +123,17 @@ export default function MyBookingsPage() {
          * =============================================
          */
 
-        const storedUser =
-          localStorage.getItem("user");
+        const storedUser = localStorage.getItem("user");
 
         if (storedUser) {
           try {
-            const parsedUser =
-              JSON.parse(storedUser);
+            const parsedUser = JSON.parse(storedUser);
 
             if (mounted) {
               setUser(parsedUser);
             }
           } catch (userError) {
-            console.error(
-              "INVALID STORED USER:",
-              userError,
-            );
+            console.error("INVALID STORED USER:", userError);
 
             localStorage.removeItem("user");
           }
@@ -173,14 +145,11 @@ export default function MyBookingsPage() {
          * =============================================
          */
 
-        const accessToken =
-          localStorage.getItem("accessToken");
+        const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
           if (mounted) {
-            setError(
-              "Your session has expired. Please login again.",
-            );
+            setError("Your session has expired. Please login again.");
           }
 
           return;
@@ -192,19 +161,11 @@ export default function MyBookingsPage() {
          * =============================================
          */
 
-        console.log(
-          "========== LOADING BOOKINGS ==========",
-        );
+        console.log("========== LOADING BOOKINGS ==========");
 
-        const response =
-          await api.get<BookingResponse>(
-            "/bookings",
-          );
+        const response = await api.get<BookingResponse>("/bookings");
 
-        console.log(
-          "BOOKINGS RESPONSE:",
-          response.data,
-        );
+        console.log("BOOKINGS RESPONSE:", response.data);
 
         /*
          * =============================================
@@ -213,10 +174,7 @@ export default function MyBookingsPage() {
          */
 
         if (!response.data.success) {
-          throw new Error(
-            response.data.message ||
-              "Unable to fetch bookings.",
-          );
+          throw new Error(response.data.message || "Unable to fetch bookings.");
         }
 
         /*
@@ -226,9 +184,7 @@ export default function MyBookingsPage() {
          */
 
         if (mounted) {
-          setBookings(
-            response.data.bookings || [],
-          );
+          setBookings(response.data.bookings || []);
 
           /*
            * Always start from first page
@@ -237,14 +193,9 @@ export default function MyBookingsPage() {
           setCurrentPage(1);
         }
 
-        console.log(
-          "BOOKINGS LOADED SUCCESSFULLY",
-        );
+        console.log("BOOKINGS LOADED SUCCESSFULLY");
       } catch (error: unknown) {
-        console.error(
-          "LOAD BOOKINGS ERROR:",
-          error,
-        );
+        console.error("LOAD BOOKINGS ERROR:", error);
 
         /*
          * =============================================
@@ -252,26 +203,19 @@ export default function MyBookingsPage() {
          * =============================================
          */
 
-        if (
-          error &&
-          typeof error === "object" &&
-          "response" in error
-        ) {
-          const axiosError =
-            error as {
-              response?: {
-                status?: number;
-                data?: {
-                  message?: string;
-                };
+        if (error && typeof error === "object" && "response" in error) {
+          const axiosError = error as {
+            response?: {
+              status?: number;
+              data?: {
+                message?: string;
               };
             };
+          };
 
-          const status =
-            axiosError.response?.status;
+          const status = axiosError.response?.status;
 
-          const message =
-            axiosError.response?.data?.message;
+          const message = axiosError.response?.data?.message;
 
           /*
            * =========================================
@@ -281,22 +225,14 @@ export default function MyBookingsPage() {
 
           if (status === 401) {
             if (mounted) {
-              setError(
-                "Your session has expired. Please login again.",
-              );
+              setError("Your session has expired. Please login again.");
             }
 
-            localStorage.removeItem(
-              "accessToken",
-            );
+            localStorage.removeItem("accessToken");
 
-            localStorage.removeItem(
-              "refreshToken",
-            );
+            localStorage.removeItem("refreshToken");
 
-            localStorage.removeItem(
-              "user",
-            );
+            localStorage.removeItem("user");
 
             return;
           }
@@ -308,10 +244,7 @@ export default function MyBookingsPage() {
            */
 
           if (mounted) {
-            setError(
-              message ||
-                "Unable to load your bookings.",
-            );
+            setError(message || "Unable to load your bookings.");
           }
 
           return;
@@ -329,9 +262,7 @@ export default function MyBookingsPage() {
           }
         } else {
           if (mounted) {
-            setError(
-              "Unable to load your bookings.",
-            );
+            setError("Unable to load your bookings.");
           }
         }
       } finally {
@@ -362,10 +293,7 @@ export default function MyBookingsPage() {
    */
 
   useEffect(() => {
-    if (
-      totalPages > 0 &&
-      currentPage > totalPages
-    ) {
+    if (totalPages > 0 && currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
@@ -377,10 +305,7 @@ export default function MyBookingsPage() {
    */
 
   const goToPage = (page: number) => {
-    if (
-      page < 1 ||
-      page > totalPages
-    ) {
+    if (page < 1 || page > totalPages) {
       return;
     }
 
@@ -414,9 +339,7 @@ export default function MyBookingsPage() {
       {/* BOOKINGS HEADER */}
       {/* ================================================= */}
 
-      <BookingsHeader
-        bookingCount={bookings.length}
-      />
+      <BookingsHeader bookingCount={bookings.length} />
 
       {/* ================================================= */}
       {/* CONTENT */}
@@ -434,10 +357,7 @@ export default function MyBookingsPage() {
             </p>
 
             <h2 className="mt-1 text-2xl font-black text-slate-950">
-              {bookings.length}{" "}
-              {bookings.length === 1
-                ? "Booking"
-                : "Bookings"}
+              {bookings.length} {bookings.length === 1 ? "Booking" : "Bookings"}
             </h2>
           </div>
 
@@ -462,7 +382,6 @@ export default function MyBookingsPage() {
             "
           >
             <Plane size={17} />
-
             Book New Flight
           </Link>
         </div>
@@ -507,7 +426,6 @@ export default function MyBookingsPage() {
                 "
               >
                 Login Again
-
                 <ArrowRight size={14} />
               </Link>
             </div>
@@ -544,10 +462,7 @@ export default function MyBookingsPage() {
                 bg-orange-50
               "
             >
-              <Plane
-                size={25}
-                className="text-orange-500"
-              />
+              <Plane size={25} className="text-orange-500" />
             </div>
 
             <p className="mt-5 text-sm font-semibold text-slate-500">
@@ -555,8 +470,7 @@ export default function MyBookingsPage() {
             </p>
 
             <p className="mt-2 text-xs text-slate-400">
-              Checking your session and retrieving
-              your bookings.
+              Checking your session and retrieving your bookings.
             </p>
           </div>
         )}
@@ -565,11 +479,9 @@ export default function MyBookingsPage() {
         {/* EMPTY STATE */}
         {/* ================================================= */}
 
-        {!loading &&
-          !error &&
-          bookings.length === 0 && (
-            <div
-              className="
+        {!loading && !error && bookings.length === 0 && (
+          <div
+            className="
                 rounded-[28px]
                 border
                 border-slate-200
@@ -579,9 +491,9 @@ export default function MyBookingsPage() {
                 text-center
                 shadow-[0_10px_40px_rgba(15,23,42,0.06)]
               "
-            >
-              <div
-                className="
+          >
+            <div
+              className="
                   mx-auto
                   flex
                   h-20
@@ -592,16 +504,16 @@ export default function MyBookingsPage() {
                   bg-orange-50
                   text-orange-500
                 "
-              >
-                <Plane size={36} />
-              </div>
+            >
+              <Plane size={36} />
+            </div>
 
-              <h2 className="mt-6 text-2xl font-black text-slate-950">
-                No bookings yet
-              </h2>
+            <h2 className="mt-6 text-2xl font-black text-slate-950">
+              No bookings yet
+            </h2>
 
-              <p
-                className="
+            <p
+              className="
                   mx-auto
                   mt-3
                   max-w-md
@@ -609,15 +521,14 @@ export default function MyBookingsPage() {
                   leading-6
                   text-slate-500
                 "
-              >
-                You haven't booked a flight yet.
-                Start exploring destinations and
-                find your next journey.
-              </p>
+            >
+              You haven't booked a flight yet. Start exploring destinations and
+              find your next journey.
+            </p>
 
-              <Link
-                href="/flights"
-                className="
+            <Link
+              href="/flights"
+              className="
                   mt-7
                   inline-flex
                   items-center
@@ -634,85 +545,73 @@ export default function MyBookingsPage() {
                   transition
                   hover:bg-orange-600
                 "
-              >
-                Search Flights
-
-                <ArrowRight size={17} />
-              </Link>
-            </div>
-          )}
+            >
+              Search Flights
+              <ArrowRight size={17} />
+            </Link>
+          </div>
+        )}
 
         {/* ================================================= */}
         {/* BOOKINGS */}
         {/* ================================================= */}
 
-        {!loading &&
-          !error &&
-          bookings.length > 0 && (
-            <>
-              <div className="space-y-6">
-                {paginatedBookings.map(
-                  (booking) => (
-                    <BookingCard
-                      key={booking.id}
-                      booking={booking}
-                    />
-                  ),
-                )}
-              </div>
+        {!loading && !error && bookings.length > 0 && (
+          <>
+            <div className="space-y-6">
+              {paginatedBookings.map((booking) => (
+                <BookingCard key={booking.id} booking={booking} />
+              ))}
+            </div>
 
-              {/* ================================================= */}
-              {/* PAGINATION */}
-              {/* ================================================= */}
+            {/* ================================================= */}
+            {/* PAGINATION */}
+            {/* ================================================= */}
 
-             {/* ================================================= */}
-{/* PAGINATION */}
-{/* ================================================= */}
+            {/* ================================================= */}
+            {/* PAGINATION */}
+            {/* ================================================= */}
 
-{totalPages > 1 && (
-  <div className="mt-10 border-t border-slate-200 pt-6">
-    <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            {totalPages > 1 && (
+              <div className="mt-10 border-t border-slate-200 pt-6">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                  {/* ============================================= */}
+                  {/* RESULTS */}
+                  {/* ============================================= */}
 
-      {/* ============================================= */}
-      {/* RESULTS */}
-      {/* ============================================= */}
+                  <div className="text-center sm:text-left">
+                    <p className="text-sm text-slate-500">
+                      Showing{" "}
+                      <span className="font-bold text-slate-900">
+                        {(currentPage - 1) * ITEMS_PER_PAGE + 1}
+                      </span>
+                      {" – "}
+                      <span className="font-bold text-slate-900">
+                        {Math.min(
+                          currentPage * ITEMS_PER_PAGE,
+                          bookings.length,
+                        )}
+                      </span>{" "}
+                      of{" "}
+                      <span className="font-bold text-slate-900">
+                        {bookings.length}
+                      </span>{" "}
+                      bookings
+                    </p>
+                  </div>
 
-      <div className="text-center sm:text-left">
-        <p className="text-sm text-slate-500">
-          Showing{" "}
-          <span className="font-bold text-slate-900">
-            {(currentPage - 1) * ITEMS_PER_PAGE + 1}
-          </span>
-          {" – "}
-          <span className="font-bold text-slate-900">
-            {Math.min(
-              currentPage * ITEMS_PER_PAGE,
-              bookings.length,
-            )}
-          </span>{" "}
-          of{" "}
-          <span className="font-bold text-slate-900">
-            {bookings.length}
-          </span>{" "}
-          bookings
-        </p>
-      </div>
+                  {/* ============================================= */}
+                  {/* PAGINATION */}
+                  {/* ============================================= */}
 
-      {/* ============================================= */}
-      {/* PAGINATION */}
-      {/* ============================================= */}
+                  <div className="flex items-center justify-center gap-2">
+                    {/* Previous */}
 
-      <div className="flex items-center justify-center gap-2">
-
-        {/* Previous */}
-
-        <button
-          type="button"
-          onClick={() =>
-            goToPage(currentPage - 1)
-          }
-          disabled={currentPage === 1}
-          className="
+                    <button
+                      type="button"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="
             group
             inline-flex
             h-10
@@ -739,29 +638,26 @@ export default function MyBookingsPage() {
             disabled:hover:text-slate-600
             sm:px-4
           "
-        >
-          <ChevronLeft
-            size={16}
-            className="transition-transform group-hover:-translate-x-0.5"
-          />
+                    >
+                      <ChevronLeft
+                        size={16}
+                        className="transition-transform group-hover:-translate-x-0.5"
+                      />
 
-          <span className="hidden sm:inline">
-            Previous
-          </span>
-        </button>
+                      <span className="hidden sm:inline">Previous</span>
+                    </button>
 
-        {/* ============================================= */}
-        {/* DESKTOP PAGE NUMBERS */}
-        {/* ============================================= */}
+                    {/* ============================================= */}
+                    {/* DESKTOP PAGE NUMBERS */}
+                    {/* ============================================= */}
 
-        <div className="hidden items-center gap-1.5 sm:flex">
+                    <div className="hidden items-center gap-1.5 sm:flex">
+                      {/* First page */}
 
-          {/* First page */}
-
-          <button
-            type="button"
-            onClick={() => goToPage(1)}
-            className={`
+                      <button
+                        type="button"
+                        onClick={() => goToPage(1)}
+                        className={`
               flex
               h-10
               min-w-10
@@ -779,40 +675,40 @@ export default function MyBookingsPage() {
                   : "border border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500"
               }
             `}
-          >
-            1
-          </button>
+                      >
+                        1
+                      </button>
 
-          {/* Left ellipsis */}
+                      {/* Left ellipsis */}
 
-          {currentPage > 3 && (
-            <span className="flex h-10 w-8 items-center justify-center text-sm font-bold text-slate-400">
-              ...
-            </span>
-          )}
+                      {currentPage > 3 && (
+                        <span className="flex h-10 w-8 items-center justify-center text-sm font-bold text-slate-400">
+                          ...
+                        </span>
+                      )}
 
-          {/* Middle pages */}
+                      {/* Middle pages */}
 
-          {Array.from(
-            { length: totalPages },
-            (_, index) => index + 1,
-          )
-            .filter((page) => {
-              if (page === 1) return false;
-              if (page === totalPages) return false;
+                      {Array.from(
+                        { length: totalPages },
+                        (_, index) => index + 1,
+                      )
+                        .filter((page) => {
+                          if (page === 1) return false;
+                          if (page === totalPages) return false;
 
-              return (
-                page === currentPage ||
-                page === currentPage - 1 ||
-                page === currentPage + 1
-              );
-            })
-            .map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => goToPage(page)}
-                className={`
+                          return (
+                            page === currentPage ||
+                            page === currentPage - 1 ||
+                            page === currentPage + 1
+                          );
+                        })
+                        .map((page) => (
+                          <button
+                            key={page}
+                            type="button"
+                            onClick={() => goToPage(page)}
+                            className={`
                   flex
                   h-10
                   min-w-10
@@ -830,28 +726,26 @@ export default function MyBookingsPage() {
                       : "border border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500"
                   }
                 `}
-              >
-                {page}
-              </button>
-            ))}
+                          >
+                            {page}
+                          </button>
+                        ))}
 
-          {/* Right ellipsis */}
+                      {/* Right ellipsis */}
 
-          {currentPage < totalPages - 2 && (
-            <span className="flex h-10 w-8 items-center justify-center text-sm font-bold text-slate-400">
-              ...
-            </span>
-          )}
+                      {currentPage < totalPages - 2 && (
+                        <span className="flex h-10 w-8 items-center justify-center text-sm font-bold text-slate-400">
+                          ...
+                        </span>
+                      )}
 
-          {/* Last page */}
+                      {/* Last page */}
 
-          {totalPages > 1 && (
-            <button
-              type="button"
-              onClick={() =>
-                goToPage(totalPages)
-              }
-              className={`
+                      {totalPages > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => goToPage(totalPages)}
+                          className={`
                 flex
                 h-10
                 min-w-10
@@ -869,43 +763,33 @@ export default function MyBookingsPage() {
                     : "border border-slate-200 bg-white text-slate-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500"
                 }
               `}
-            >
-              {totalPages}
-            </button>
-          )}
-        </div>
+                        >
+                          {totalPages}
+                        </button>
+                      )}
+                    </div>
 
-        {/* ============================================= */}
-        {/* MOBILE PAGE INDICATOR */}
-        {/* ============================================= */}
+                    {/* ============================================= */}
+                    {/* MOBILE PAGE INDICATOR */}
+                    {/* ============================================= */}
 
-        <div className="flex h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm sm:hidden">
-          <span className="text-orange-500">
-            {currentPage}
-          </span>
+                    <div className="flex h-10 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm sm:hidden">
+                      <span className="text-orange-500">{currentPage}</span>
 
-          <span className="mx-2 text-slate-300">
-            /
-          </span>
+                      <span className="mx-2 text-slate-300">/</span>
 
-          <span>
-            {totalPages}
-          </span>
-        </div>
+                      <span>{totalPages}</span>
+                    </div>
 
-        {/* ============================================= */}
-        {/* NEXT */}
-        {/* ============================================= */}
+                    {/* ============================================= */}
+                    {/* NEXT */}
+                    {/* ============================================= */}
 
-        <button
-          type="button"
-          onClick={() =>
-            goToPage(currentPage + 1)
-          }
-          disabled={
-            currentPage === totalPages
-          }
-          className="
+                    <button
+                      type="button"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="
             group
             inline-flex
             h-10
@@ -932,23 +816,20 @@ export default function MyBookingsPage() {
             disabled:hover:text-slate-600
             sm:px-4
           "
-        >
-          <span className="hidden sm:inline">
-            Next
-          </span>
+                    >
+                      <span className="hidden sm:inline">Next</span>
 
-          <ChevronRight
-            size={16}
-            className="transition-transform group-hover:translate-x-0.5"
-          />
-        </button>
-
-      </div>
-    </div>
-  </div>
-)}
-            </>
-          )}
+                      <ChevronRight
+                        size={16}
+                        className="transition-transform group-hover:translate-x-0.5"
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </section>
 
       {/* ================================================= */}
