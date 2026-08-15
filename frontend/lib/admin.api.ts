@@ -18,9 +18,7 @@ export interface DashboardStats {
 
 export const getDashboardStats =
   async (): Promise<DashboardStats> => {
-    const response = await api.get(
-      "/admin/dashboard",
-    );
+    const response = await api.get("/admin/dashboard");
 
     return response.data.stats;
   };
@@ -33,21 +31,30 @@ export const getDashboardStats =
 
 export interface Flight {
   id: string;
+
   flightNumber: string;
   airline: string;
+
   origin: string;
   destination: string;
+
   departureAt: string;
   arrivalAt: string;
+
   fare: number;
+
   totalSeats: number;
   availableSeats: number;
+
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface FlightListResponse {
+  success?: boolean;
+
   flights: Flight[];
+
   pagination?: {
     page: number;
     limit: number;
@@ -59,14 +66,25 @@ export interface FlightListResponse {
 export interface FlightPayload {
   flightNumber: string;
   airline: string;
+
   origin: string;
   destination: string;
+
   departureAt: string;
   arrivalAt: string;
+
   fare: number;
+
   totalSeats: number;
+
   availableSeats?: number;
 }
+
+/*
+ * =====================================================
+ * GET ALL FLIGHTS
+ * =====================================================
+ */
 
 export const getAdminFlights = async (
   params?: {
@@ -85,6 +103,12 @@ export const getAdminFlights = async (
   return response.data;
 };
 
+/*
+ * =====================================================
+ * GET SINGLE FLIGHT
+ * =====================================================
+ */
+
 export const getAdminFlight = async (
   id: string,
 ): Promise<Flight> => {
@@ -94,6 +118,12 @@ export const getAdminFlight = async (
 
   return response.data.flight;
 };
+
+/*
+ * =====================================================
+ * CREATE FLIGHT
+ * =====================================================
+ */
 
 export const createFlight = async (
   data: FlightPayload,
@@ -106,17 +136,32 @@ export const createFlight = async (
   return response.data;
 };
 
+/*
+ * =====================================================
+ * UPDATE FLIGHT
+ *
+ * IMPORTANT:
+ * Backend uses PATCH, not PUT.
+ * =====================================================
+ */
+
 export const updateFlight = async (
   id: string,
   data: Partial<FlightPayload>,
 ) => {
-  const response = await api.put(
+  const response = await api.patch(
     `/admin/flights/${id}`,
     data,
   );
 
   return response.data;
 };
+
+/*
+ * =====================================================
+ * DELETE FLIGHT
+ * =====================================================
+ */
 
 export const deleteFlight = async (
   id: string,
@@ -130,7 +175,7 @@ export const deleteFlight = async (
 
 /*
  * =====================================================
- * INVENTORY
+ * UPDATE INVENTORY
  * =====================================================
  */
 
@@ -157,7 +202,9 @@ export const updateFlightInventory = async (
 
 export interface AdminBooking {
   id: string;
+
   bookingReference: string;
+
   status:
     | "PENDING"
     | "CONFIRMED"
@@ -170,35 +217,73 @@ export interface AdminBooking {
 
   user?: {
     id: string;
-    firstName: string;
-    lastName: string;
+
+    /*
+     * Backend currently returns `name`,
+     * not firstName / lastName.
+     */
+    name: string;
+
     email: string;
   };
 
   flight: {
     id: string;
+
     flightNumber: string;
     airline: string;
+
     origin: string;
     destination: string;
+
     departureAt: string;
     arrivalAt: string;
+
+    fare?: number;
+
+    totalSeats?: number;
+    availableSeats?: number;
   };
 
   passengers?: Array<{
     id: string;
+
     fullName: string;
+
     dateOfBirth: string;
+
     nationality: string;
+
     passportNumber: string;
+
     email: string;
+
     contactNumber: string;
+  }>;
+
+  payments?: Array<{
+    id: string;
+
+    amount: number;
+
+    status: string;
+
+    stripePaymentIntentId?: string | null;
+
+    stripeRefundId?: string | null;
+
+    refundedAt?: string | null;
   }>;
 }
 
 export interface AdminBookingsResponse {
+  success?: boolean;
+
+  count?: number;
+
   bookings: AdminBooking[];
-  pagination: {
+
+  pagination?: {
     page: number;
     limit: number;
     total: number;
@@ -206,15 +291,23 @@ export interface AdminBookingsResponse {
   };
 }
 
+/*
+ * =====================================================
+ * GET BOOKINGS
+ * =====================================================
+ */
+
 export const getAdminBookings =
-  async (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-    date?: string;
-    origin?: string;
-    destination?: string;
-  }): Promise<AdminBookingsResponse> => {
+  async (
+    params?: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      date?: string;
+      origin?: string;
+      destination?: string;
+    },
+  ): Promise<AdminBookingsResponse> => {
     const response = await api.get(
       "/admin/bookings",
       {
@@ -224,6 +317,12 @@ export const getAdminBookings =
 
     return response.data;
   };
+
+/*
+ * =====================================================
+ * GET SINGLE BOOKING
+ * =====================================================
+ */
 
 export const getAdminBooking = async (
   id: string,
@@ -237,14 +336,17 @@ export const getAdminBooking = async (
 
 /*
  * =====================================================
- * ADMIN CANCEL / REFUND
+ * ADMIN CANCEL BOOKING
+ *
+ * IMPORTANT:
+ * Backend uses PATCH.
  * =====================================================
  */
 
 export const cancelAdminBooking = async (
   id: string,
 ) => {
-  const response = await api.post(
+  const response = await api.patch(
     `/admin/bookings/${id}/cancel`,
   );
 
