@@ -95,8 +95,8 @@ export declare class BookingService {
             status: import("../generated/prisma/enums").PaymentStatus;
             stripePaymentIntentId: string;
             bookingId: string;
-            currency: string;
             amount: import("@prisma/client-runtime-utils").Decimal;
+            currency: string;
             paidAt: Date | null;
             refundedAt: Date | null;
         } | null;
@@ -148,8 +148,8 @@ export declare class BookingService {
             status: import("../generated/prisma/enums").PaymentStatus;
             stripePaymentIntentId: string;
             bookingId: string;
-            currency: string;
             amount: import("@prisma/client-runtime-utils").Decimal;
+            currency: string;
             paidAt: Date | null;
             refundedAt: Date | null;
         } | null;
@@ -165,6 +165,50 @@ export declare class BookingService {
         status: import("../generated/prisma/enums").BookingStatus;
         stripePaymentIntentId: string | null;
     })[]>;
+    /**
+     * Cancel booking
+     *
+     * PENDING:
+     *   Cancel booking + release seats.
+     *
+     * CONFIRMED:
+     *   Refund Stripe payment + cancel booking
+     *   + release seats.
+     */
+    cancelBooking(bookingId: string, userId: string): Promise<{
+        booking: {
+            userId: string;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            flightId: string;
+            bookingReference: string;
+            passengerCount: number;
+            totalAmount: import("@prisma/client-runtime-utils").Decimal;
+            status: import("../generated/prisma/enums").BookingStatus;
+            stripePaymentIntentId: string | null;
+        };
+        refund: null;
+        message: string;
+    } | {
+        booking: {
+            userId: string;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            flightId: string;
+            bookingReference: string;
+            passengerCount: number;
+            totalAmount: import("@prisma/client-runtime-utils").Decimal;
+            status: import("../generated/prisma/enums").BookingStatus;
+            stripePaymentIntentId: string | null;
+        };
+        refund: {
+            id: string;
+            status: string | null;
+        };
+        message: string;
+    }>;
 }
 export declare const bookingService: BookingService;
 export {};

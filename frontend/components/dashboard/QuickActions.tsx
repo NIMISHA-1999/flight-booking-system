@@ -22,7 +22,7 @@ export default function QuickActions() {
         />
 
         <ActionCard
-          href="/bookings"
+          href="/booking"
           icon={<Ticket size={28} />}
           title="My Bookings"
           description="View, manage and cancel your existing bookings."

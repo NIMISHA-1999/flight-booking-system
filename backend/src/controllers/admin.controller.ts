@@ -328,7 +328,7 @@ export const getAllBookings = async (req: Request, res: Response) => {
  */
 
 export const cancelBooking = async (req: Request, res: Response) => {
-  const { bookingId } = req.params;
+ const bookingId = String(req.params.bookingId);
 
   try {
     /*
@@ -1028,7 +1028,7 @@ export const createFlight = async (req: Request, res: Response) => {
 
 export const updateFlight = async (req: Request, res: Response) => {
   try {
-    const { flightId } = req.params;
+    const flightId = String(req.params.flightId);
 
     /*
      * =================================================
@@ -1263,7 +1263,7 @@ export const updateFlight = async (req: Request, res: Response) => {
 
 export const deleteFlight = async (req: Request, res: Response) => {
   try {
-    const { flightId } = req.params;
+   const flightId = String(req.params.flightId);
 
     /*
      * =================================================

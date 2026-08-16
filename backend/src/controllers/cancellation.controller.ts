@@ -7,7 +7,10 @@ export const cancelBooking = async (
   res: Response,
 ) => {
   try {
-    const { bookingId } = req.params;
+    const bookingIdParam = req.params.bookingId;
+    const bookingId = Array.isArray(bookingIdParam)
+      ? bookingIdParam[0]
+      : bookingIdParam;
 
     const userId = req.user?.userId;
 
@@ -25,44 +28,28 @@ export const cancelBooking = async (
       });
     }
 
-    console.log(
-      "====================================",
-    );
+    console.log("====================================");
 
-    console.log(
-      "CANCEL BOOKING REQUEST",
-    );
+    console.log("CANCEL BOOKING REQUEST");
 
-    console.log(
-      "Booking ID:",
+    console.log("Booking ID:", bookingId);
+
+    console.log("User ID:", userId);
+
+    const result = await cancellationService.cancelBooking(
       bookingId,
-    );
-
-    console.log(
-      "User ID:",
       userId,
+      false,
     );
-
-    const result =
-      await cancellationService.cancelBooking(
-        bookingId,
-        userId,
-        false,
-      );
 
     return res.status(200).json(result);
   } catch (error) {
-    console.error(
-      "CANCEL BOOKING ERROR:",
-      error,
-    );
+    console.error("CANCEL BOOKING ERROR:", error);
 
     return res.status(400).json({
       success: false,
       message:
-        error instanceof Error
-          ? error.message
-          : "Unable to cancel booking.",
+        error instanceof Error ? error.message : "Unable to cancel booking.",
     });
   }
 };

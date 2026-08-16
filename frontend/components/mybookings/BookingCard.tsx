@@ -1128,7 +1128,7 @@ export default function BookingCard({
                 >
                   <ShieldCheck size={15} />
 
-                  Payment Complete
+                  Payment Completed
                 </div>
               )}
 

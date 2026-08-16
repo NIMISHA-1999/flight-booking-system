@@ -7,20 +7,18 @@ export const getAdminUsers = async (
   next: NextFunction,
 ) => {
   try {
-    const pageParam = Number(req.query.page);
-    const limitParam = Number(req.query.limit);
+    const page = Math.max(
+      1,
+      Number.parseInt(String(req.query.page || "1"), 10) || 1,
+    );
 
-    const page =
-      Number.isFinite(pageParam) && pageParam > 0
-        ? Math.floor(pageParam)
-        : 1;
+    const limitValue =
+      Number.parseInt(String(req.query.limit || "10"), 10) || 10;
 
-    const limit =
-      Number.isFinite(limitParam) &&
-      limitParam > 0 &&
-      limitParam <= 100
-        ? Math.floor(limitParam)
-        : 10;
+    const limit = Math.min(
+      100,
+      Math.max(1, limitValue),
+    );
 
     const search =
       typeof req.query.search === "string"
@@ -35,14 +33,23 @@ export const getAdminUsers = async (
     const skip = (page - 1) * limit;
 
     /*
-     * Build Prisma WHERE condition
+     * =====================================================
+     * BUILD WHERE
+     * =====================================================
      */
+
     const where: any = {};
 
     /*
-     * Search by first name, last name or email
+     * SEARCH
+     *
+     * Search:
+     * - first name
+     * - last name
+     * - email
      */
-    if (search) {
+
+    if (search.length > 0) {
       where.OR = [
         {
           firstName: {
@@ -66,18 +73,34 @@ export const getAdminUsers = async (
     }
 
     /*
-     * Filter by role
+     * =====================================================
+     * ROLE FILTER
+     * =====================================================
      */
+
     if (role) {
       where.role = role;
     }
 
+    console.log("====================================");
+    console.log("GET ADMIN USERS");
+    console.log("Search:", search);
+    console.log("Role:", role);
+    console.log("Page:", page);
+    console.log("Limit:", limit);
+    console.log("Where:", JSON.stringify(where, null, 2));
+    console.log("====================================");
+
     /*
-     * Get users + total count
+     * =====================================================
+     * DATABASE
+     * =====================================================
      */
+
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
+
         skip,
         take: limit,
 
@@ -100,10 +123,11 @@ export const getAdminUsers = async (
       }),
     ]);
 
-    const totalPages =
-      total === 0
-        ? 0
-        : Math.ceil(total / limit);
+    /*
+     * =====================================================
+     * RESPONSE
+     * =====================================================
+     */
 
     return res.status(200).json({
       success: true,
@@ -114,7 +138,10 @@ export const getAdminUsers = async (
         page,
         limit,
         total,
-        totalPages,
+        totalPages:
+          total > 0
+            ? Math.ceil(total / limit)
+            : 1,
       },
     });
   } catch (error) {

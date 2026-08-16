@@ -77,11 +77,11 @@ export default function ProfilePage() {
 
         {/* Decorative plane */}
 
-        <Plane
+        {/* <Plane
           size={300}
           strokeWidth={1}
           className="absolute right-8 top-16 hidden rotate-[-15deg] text-white/10 lg:block"
-        />
+        /> */}
 
         {/* Content */}
 
@@ -172,7 +172,7 @@ export default function ProfilePage() {
 
             <div className="space-y-3">
               <Link
-                href="/bookings"
+                href="/booking"
                 className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-500"
               >
                 <span className="flex items-center gap-3">

@@ -38,13 +38,25 @@ class PaymentService {
                     quantity: 1,
                 },
             ],
+            // IMPORTANT
             metadata: {
                 bookingId: booking.id,
-                userId,
+                userId: userId,
             },
-            success_url: `${process.env.FRONTEND_URL}/booking/success?bookingId=${booking.id}`,
-            cancel_url: `${process.env.FRONTEND_URL}/booking/${booking.flightId}/payment?bookingId=${booking.id}`,
+            payment_intent_data: {
+                metadata: {
+                    bookingId: booking.id,
+                    userId: userId,
+                },
+            },
+            success_url: `${process.env.FRONTEND_URL}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.FRONTEND_URL}` +
+                `/booking/${booking.flightId}/payment?bookingId=${booking.id}`,
         });
+        console.log("================================");
+        console.log("STRIPE SESSION CREATED:", session.id);
+        console.log("SESSION METADATA:", session.metadata);
+        console.log("================================");
         return session;
     }
 }

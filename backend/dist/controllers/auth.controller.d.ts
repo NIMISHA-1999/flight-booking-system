@@ -14,7 +14,7 @@ declare class AuthController {
     login(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
     /**
      * =====================================================
-     * REFRESH ACCESS TOKEN
+     * REFRESH
      * =====================================================
      */
     refresh(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;

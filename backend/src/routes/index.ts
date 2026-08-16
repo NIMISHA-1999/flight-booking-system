@@ -17,6 +17,6 @@ router.use("/payments", paymentRoutes);
 // router.use("/stripe", stripeWebhookRoutes);
 router.use("/bookings", cancellationRoutes);
 router.use("/admin", adminRoutes);
-router.use("/api/admin", adminUserRoutes);
+router.use("/admin/users", adminUserRoutes);
 
 export default router;

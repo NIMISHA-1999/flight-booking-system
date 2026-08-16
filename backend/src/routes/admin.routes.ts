@@ -1,8 +1,6 @@
 // src/routes/admin.routes.ts
 
-import {
-  Router,
-} from "express";
+import { Router } from "express";
 
 import {
   authMiddleware,
@@ -20,31 +18,31 @@ import {
   createFlight,
   updateFlight,
   deleteFlight,
-  getAllUsers,
-  getUserById,
-  deleteUser,
 } from "../controllers/admin.controller";
 
-const router =
-  Router();
+const router = Router();
 
 /*
- * Every route below requires:
+ * =====================================================
+ * ADMIN AUTHENTICATION
+ * =====================================================
+ *
+ * Every admin route requires:
  *
  * 1. Valid JWT
  * 2. ADMIN role
+ *
+ * =====================================================
  */
 
-router.use(
-  authMiddleware,
-);
+router.use(authMiddleware);
 
-router.use(
-  requireAdmin,
-);
+router.use(requireAdmin);
 
 /*
- * Dashboard
+ * =====================================================
+ * DASHBOARD
+ * =====================================================
  */
 
 router.get(
@@ -53,7 +51,9 @@ router.get(
 );
 
 /*
- * Bookings
+ * =====================================================
+ * BOOKINGS
+ * =====================================================
  */
 
 router.get(
@@ -67,7 +67,9 @@ router.patch(
 );
 
 /*
- * Flights
+ * =====================================================
+ * FLIGHTS
+ * =====================================================
  */
 
 router.get(

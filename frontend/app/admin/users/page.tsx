@@ -68,16 +68,20 @@ export default function AdminUsersPage() {
    * =====================================================
    */
 
-  const [users, setUsers] = useState<
-    AdminUser[]
-  >([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
 
   const [loading, setLoading] =
     useState<boolean>(true);
 
+  // What user is currently typing
   const [search, setSearch] =
     useState<string>("");
 
+  // What search is actually applied to API
+  const [appliedSearch, setAppliedSearch] =
+    useState<string>("");
+
+  // Selected role in dropdown
   const [role, setRole] =
     useState<string>("");
 
@@ -107,9 +111,7 @@ export default function AdminUsersPage() {
       return null;
     }
 
-    return localStorage.getItem(
-      "accessToken",
-    );
+    return localStorage.getItem("accessToken");
   };
 
   /*
@@ -120,7 +122,9 @@ export default function AdminUsersPage() {
 
   const loadUsers = useCallback(
     async (
-      requestedPage: number = page,
+      requestedPage: number,
+      requestedSearch: string,
+      requestedRole: string,
     ) => {
       try {
         setLoading(true);
@@ -128,50 +132,68 @@ export default function AdminUsersPage() {
 
         const token = getToken();
 
-        const params =
-          new URLSearchParams();
+        const params = new URLSearchParams();
 
         params.set(
           "page",
           String(requestedPage),
         );
 
-        params.set("limit", "10");
+        params.set(
+          "limit",
+          "10",
+        );
 
-        if (search.trim()) {
+        if (requestedSearch.trim()) {
           params.set(
             "search",
-            search.trim(),
+            requestedSearch.trim(),
           );
         }
 
-        if (role) {
-          params.set("role", role);
+        if (requestedRole.trim()) {
+          params.set(
+            "role",
+            requestedRole.trim().toUpperCase(),
+          );
         }
 
-        const response =
-          await fetch(
-            `${API_URL}/admin/users?${params.toString()}`,
-            {
-              method: "GET",
+        const url =
+          `${API_URL}/admin/users?${params.toString()}`;
 
-              headers: {
-                "Content-Type":
-                  "application/json",
+        console.log(
+          "GET ADMIN USERS:",
+          url,
+        );
 
-                ...(token
-                  ? {
-                      Authorization: `Bearer ${token}`,
-                    }
-                  : {}),
-              },
+        const response = await fetch(
+          url,
+          {
+            method: "GET",
 
-              cache: "no-store",
+            headers: {
+              Accept:
+                "application/json",
+
+              ...(token
+                ? {
+                    Authorization:
+                      `Bearer ${token}`,
+                  }
+                : {}),
             },
-          );
+
+            cache: "no-store",
+          },
+        );
 
         const data =
           await response.json();
+
+        console.log(
+          "ADMIN USERS RESPONSE:",
+          data,
+        );
 
         if (!response.ok) {
           throw new Error(
@@ -181,7 +203,9 @@ export default function AdminUsersPage() {
         }
 
         setUsers(
-          data?.users || [],
+          Array.isArray(data?.users)
+            ? data.users
+            : [],
         );
 
         setPagination(
@@ -205,11 +229,7 @@ export default function AdminUsersPage() {
         setLoading(false);
       }
     },
-    [
-      page,
-      search,
-      role,
-    ],
+    [],
   );
 
   /*
@@ -219,8 +239,12 @@ export default function AdminUsersPage() {
    */
 
   useEffect(() => {
-    void loadUsers(page);
-  }, [page, loadUsers]);
+    void loadUsers(
+      1,
+      "",
+      "",
+    );
+  }, [loadUsers]);
 
   /*
    * =====================================================
@@ -229,12 +253,45 @@ export default function AdminUsersPage() {
    */
 
   const handleSearch = () => {
-    if (page !== 1) {
-      setPage(1);
-      return;
-    }
+    const newSearch =
+      search.trim();
 
-    void loadUsers(1);
+    // Apply the typed search
+    setAppliedSearch(
+      newSearch,
+    );
+
+    // Always start from page 1
+    setPage(1);
+
+    // Immediately load with the NEW search value.
+    // Do not wait for React state update.
+    void loadUsers(
+      1,
+      newSearch,
+      role,
+    );
+  };
+
+  /*
+   * =====================================================
+   * ROLE CHANGE
+   * =====================================================
+   */
+
+  const handleRoleChange = (
+    value: string,
+  ) => {
+    setRole(value);
+
+    // Role filtering should immediately work.
+    setPage(1);
+
+    void loadUsers(
+      1,
+      appliedSearch,
+      value,
+    );
   };
 
   /*
@@ -245,14 +302,15 @@ export default function AdminUsersPage() {
 
   const handleClearFilters = () => {
     setSearch("");
+    setAppliedSearch("");
     setRole("");
+    setPage(1);
 
-    if (page !== 1) {
-      setPage(1);
-      return;
-    }
-
-    void loadUsers(1);
+    void loadUsers(
+      1,
+      "",
+      "",
+    );
   };
 
   /*
@@ -262,7 +320,60 @@ export default function AdminUsersPage() {
    */
 
   const handleRefresh = () => {
-    void loadUsers(page);
+    void loadUsers(
+      page,
+      appliedSearch,
+      role,
+    );
+  };
+
+  /*
+   * =====================================================
+   * PAGINATION
+   * =====================================================
+   */
+
+  const handlePrevious = () => {
+    if (
+      !pagination ||
+      pagination.page <= 1 ||
+      loading
+    ) {
+      return;
+    }
+
+    const nextPage =
+      pagination.page - 1;
+
+    setPage(nextPage);
+
+    void loadUsers(
+      nextPage,
+      appliedSearch,
+      role,
+    );
+  };
+
+  const handleNext = () => {
+    if (
+      !pagination ||
+      pagination.page >=
+        pagination.totalPages ||
+      loading
+    ) {
+      return;
+    }
+
+    const nextPage =
+      pagination.page + 1;
+
+    setPage(nextPage);
+
+    void loadUsers(
+      nextPage,
+      appliedSearch,
+      role,
+    );
   };
 
   /*
@@ -275,6 +386,7 @@ export default function AdminUsersPage() {
     event: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (event.key === "Enter") {
+      event.preventDefault();
       handleSearch();
     }
   };
@@ -325,7 +437,7 @@ export default function AdminUsersPage() {
 
   /*
    * =====================================================
-   * ROLE BADGE
+   * ROLE CLASS
    * =====================================================
    */
 
@@ -364,9 +476,7 @@ export default function AdminUsersPage() {
           mobileMenuOpen
         }
         onClose={() =>
-          setMobileMenuOpen(
-            false,
-          )
+          setMobileMenuOpen(false)
         }
         onLogout={
           handleLogout
@@ -387,14 +497,10 @@ export default function AdminUsersPage() {
 
           <div className="flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
 
-            {/* MOBILE MENU */}
-
             <button
               type="button"
               onClick={() =>
-                setMobileMenuOpen(
-                  true,
-                )
+                setMobileMenuOpen(true)
               }
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:bg-slate-50 lg:hidden"
               title="Open menu"
@@ -402,8 +508,6 @@ export default function AdminUsersPage() {
             >
               <Menu size={20} />
             </button>
-
-            {/* HEADER LEFT */}
 
             <div className="hidden lg:block">
 
@@ -416,8 +520,6 @@ export default function AdminUsersPage() {
               </p>
 
             </div>
-
-            {/* HEADER RIGHT */}
 
             <div className="flex items-center gap-3">
 
@@ -458,7 +560,7 @@ export default function AdminUsersPage() {
         </header>
 
         {/* =================================================
-            PAGE CONTENT
+            CONTENT
         ================================================= */}
 
         <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
@@ -488,8 +590,6 @@ export default function AdminUsersPage() {
               </div>
 
             </div>
-
-            {/* REFRESH */}
 
             <button
               type="button"
@@ -533,6 +633,8 @@ export default function AdminUsersPage() {
                 onClick={() =>
                   void loadUsers(
                     page,
+                    appliedSearch,
+                    role,
                   )
                 }
                 className="text-sm font-semibold text-red-700 underline"
@@ -565,8 +667,7 @@ export default function AdminUsersPage() {
                   value={search}
                   onChange={(event) =>
                     setSearch(
-                      event.target
-                        .value,
+                      event.target.value,
                     )
                   }
                   onKeyDown={
@@ -582,12 +683,11 @@ export default function AdminUsersPage() {
 
               <select
                 value={role}
-                onChange={(event) => {
-                  setRole(
-                    event.target
-                      .value,
-                  );
-                }}
+                onChange={(event) =>
+                  handleRoleChange(
+                    event.target.value,
+                  )
+                }
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
               >
 
@@ -654,12 +754,18 @@ export default function AdminUsersPage() {
                 ? `Showing ${users.length} of ${pagination.total} users`
                 : `${users.length} users`}
 
+              {appliedSearch && (
+                <span className="ml-2 text-sky-600">
+                  for "{appliedSearch}"
+                </span>
+              )}
+
             </p>
 
           </div>
 
           {/* =================================================
-              USERS TABLE
+              TABLE
           ================================================= */}
 
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -698,8 +804,6 @@ export default function AdminUsersPage() {
 
                 <tbody className="divide-y divide-slate-100">
 
-                  {/* LOADING */}
-
                   {loading ? (
 
                     <tr>
@@ -722,10 +826,7 @@ export default function AdminUsersPage() {
 
                     </tr>
 
-                  ) : users.length ===
-                    0 ? (
-
-                    /* EMPTY */
+                  ) : users.length === 0 ? (
 
                     <tr>
 
@@ -738,9 +839,7 @@ export default function AdminUsersPage() {
 
                           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
 
-                            <Users
-                              size={24}
-                            />
+                            <Users size={24} />
 
                           </div>
 
@@ -764,9 +863,7 @@ export default function AdminUsersPage() {
                       (user) => (
 
                         <tr
-                          key={
-                            user.id
-                          }
+                          key={user.id}
                           className="transition hover:bg-slate-50"
                         >
 
@@ -781,9 +878,7 @@ export default function AdminUsersPage() {
                                 {getUserName(
                                   user,
                                 )
-                                  .charAt(
-                                    0,
-                                  )
+                                  .charAt(0)
                                   .toUpperCase()}
 
                               </div>
@@ -797,8 +892,7 @@ export default function AdminUsersPage() {
                                 </p>
 
                                 <p className="mt-1 text-xs text-slate-400">
-                                  ID:{" "}
-                                  {user.id}
+                                  ID: {user.id}
                                 </p>
 
                               </div>
@@ -819,9 +913,7 @@ export default function AdminUsersPage() {
                               />
 
                               <span className="text-sm text-slate-700">
-                                {
-                                  user.email
-                                }
+                                {user.email}
                               </span>
 
                             </div>
@@ -880,11 +972,7 @@ export default function AdminUsersPage() {
                                 aria-label="View user"
                                 className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-sky-50 hover:text-sky-600"
                               >
-
-                                <Eye
-                                  size={18}
-                                />
-
+                                <Eye size={18} />
                               </button>
 
                             </div>
@@ -909,8 +997,7 @@ export default function AdminUsersPage() {
             ================================================= */}
 
             {pagination &&
-              pagination.totalPages >
-                1 && (
+              pagination.totalPages > 1 && (
 
                 <div className="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
 
@@ -919,25 +1006,17 @@ export default function AdminUsersPage() {
                     Page{" "}
 
                     <span className="font-semibold text-slate-700">
-                      {
-                        pagination.page
-                      }
+                      {pagination.page}
                     </span>
 
                     {" "}of{" "}
 
                     <span className="font-semibold text-slate-700">
-                      {
-                        pagination.totalPages
-                      }
+                      {pagination.totalPages}
                     </span>
 
                     <span className="ml-2 text-slate-400">
-                      (
-                      {
-                        pagination.total
-                      }{" "}
-                      total)
+                      ({pagination.total} total)
                     </span>
 
                   </p>
@@ -947,19 +1026,11 @@ export default function AdminUsersPage() {
                     <button
                       type="button"
                       disabled={
-                        pagination.page <=
-                          1 ||
+                        pagination.page <= 1 ||
                         loading
                       }
-                      onClick={() =>
-                        setPage(
-                          (current) =>
-                            Math.max(
-                              1,
-                              current -
-                                1,
-                            ),
-                        )
+                      onClick={
+                        handlePrevious
                       }
                       className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
@@ -973,15 +1044,8 @@ export default function AdminUsersPage() {
                           pagination.totalPages ||
                         loading
                       }
-                      onClick={() =>
-                        setPage(
-                          (current) =>
-                            Math.min(
-                              pagination.totalPages,
-                              current +
-                                1,
-                            ),
-                        )
+                      onClick={
+                        handleNext
                       }
                       className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
@@ -1013,27 +1077,19 @@ export default function AdminUsersPage() {
               event.target ===
               event.currentTarget
             ) {
-              setSelectedUser(
-                null,
-              );
+              setSelectedUser(null);
             }
           }}
         >
 
           <div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
 
-            {/* HEADER */}
-
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
 
               <div className="flex items-center gap-3">
 
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-sky-50 text-sky-600">
-
-                  <UserRound
-                    size={21}
-                  />
-
+                  <UserRound size={21} />
                 </div>
 
                 <div>
@@ -1053,9 +1109,7 @@ export default function AdminUsersPage() {
               <button
                 type="button"
                 onClick={() =>
-                  setSelectedUser(
-                    null,
-                  )
+                  setSelectedUser(null)
                 }
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                 title="Close"
@@ -1066,14 +1120,9 @@ export default function AdminUsersPage() {
 
             </div>
 
-            {/* CONTENT */}
-
             <div className="space-y-5 px-6 py-6">
 
-              {/* NAME */}
-
               <div>
-
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                   Name
                 </p>
@@ -1083,29 +1132,19 @@ export default function AdminUsersPage() {
                     selectedUser,
                   )}
                 </p>
-
               </div>
 
-              {/* EMAIL */}
-
               <div>
-
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                   Email
                 </p>
 
                 <p className="mt-1 break-all text-sm font-semibold text-slate-800">
-                  {
-                    selectedUser.email
-                  }
+                  {selectedUser.email}
                 </p>
-
               </div>
 
-              {/* ROLE */}
-
               <div>
-
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                   Role
                 </p>
@@ -1120,13 +1159,9 @@ export default function AdminUsersPage() {
 
                     {selectedUser.role?.toUpperCase() ===
                     "ADMIN" ? (
-                      <ShieldCheck
-                        size={14}
-                      />
+                      <ShieldCheck size={14} />
                     ) : (
-                      <UserRound
-                        size={14}
-                      />
+                      <UserRound size={14} />
                     )}
 
                     {formatRole(
@@ -1136,29 +1171,19 @@ export default function AdminUsersPage() {
                   </span>
 
                 </div>
-
               </div>
 
-              {/* USER ID */}
-
               <div>
-
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                   User ID
                 </p>
 
                 <p className="mt-1 break-all font-mono text-xs text-slate-600">
-                  {
-                    selectedUser.id
-                  }
+                  {selectedUser.id}
                 </p>
-
               </div>
 
-              {/* CREATED */}
-
               <div>
-
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                   Registered
                 </p>
@@ -1168,21 +1193,16 @@ export default function AdminUsersPage() {
                     selectedUser.createdAt,
                   )}
                 </p>
-
               </div>
 
             </div>
-
-            {/* FOOTER */}
 
             <div className="border-t border-slate-100 px-6 py-4">
 
               <button
                 type="button"
                 onClick={() =>
-                  setSelectedUser(
-                    null,
-                  )
+                  setSelectedUser(null)
                 }
                 className="w-full rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-600"
               >

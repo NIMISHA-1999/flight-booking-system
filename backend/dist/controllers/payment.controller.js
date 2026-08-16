@@ -23,6 +23,7 @@ const createCheckoutSession = async (req, res) => {
             });
         }
         const session = await payment_service_1.paymentService.createCheckoutSession(bookingId, userId);
+        console.log("STRIPE SESSION CREATED:", session.id);
         return res.status(200).json({
             success: true,
             url: session.url,
@@ -30,8 +31,11 @@ const createCheckoutSession = async (req, res) => {
         });
     }
     catch (error) {
+        console.error("================================");
         console.error("CREATE CHECKOUT SESSION ERROR:", error);
+        console.error("================================");
         return res.status(400).json({
+            success: false,
             message: error instanceof Error
                 ? error.message
                 : "Unable to create checkout session.",

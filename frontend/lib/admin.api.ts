@@ -543,3 +543,95 @@ export interface AdminBookingsResponse {
 
 //     return response.data;
 //   };
+
+/*
+ * =====================================================
+ * ADMIN USERS
+ * =====================================================
+ */
+
+export type AdminUserRole =
+  | "USER"
+  | "ADMIN";
+
+export interface AdminUser {
+  id: string;
+
+  firstName: string;
+  lastName: string;
+
+  email: string;
+
+  role: AdminUserRole | string;
+
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AdminUsersResponse {
+  success?: boolean;
+
+  users: AdminUser[];
+
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+/*
+ * =====================================================
+ * GET ALL ADMIN USERS
+ * =====================================================
+ *
+ * GET /admin/users?page=1&limit=10
+ *
+ * Optional:
+ *
+ * GET /admin/users?page=1&limit=10&search=john
+ *
+ * =====================================================
+ */
+
+export const getAdminUsers = async (
+  params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  },
+): Promise<AdminUsersResponse> => {
+  const response = await api.get(
+    "/admin/users",
+    {
+      params: {
+        page: params?.page ?? 1,
+
+        limit: params?.limit ?? 10,
+
+        search:
+          params?.search?.trim() ||
+          undefined,
+      },
+    },
+  );
+
+  return response.data;
+};
+
+/*
+ * =====================================================
+ * GET SINGLE ADMIN USER
+ * =====================================================
+ */
+
+export const getAdminUser = async (
+  id: string,
+): Promise<AdminUser> => {
+  const response = await api.get(
+    `/admin/users/${id}`,
+  );
+
+  return response.data.user;
+};

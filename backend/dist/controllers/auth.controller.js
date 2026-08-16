@@ -1,4 +1,5 @@
 "use strict";
+// src/controllers/auth.controller.ts
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -26,7 +27,9 @@ class AuthController {
             const result = await auth_service_1.default.register({
                 firstName: firstName.trim(),
                 lastName: lastName.trim(),
-                email: email.trim().toLowerCase(),
+                email: email
+                    .trim()
+                    .toLowerCase(),
                 password,
             });
             return res.status(201).json({
@@ -52,17 +55,32 @@ class AuthController {
      */
     async login(req, res) {
         try {
-            console.log("LOGIN BODY:", req.body);
+            console.log("LOGIN BODY:", {
+                email: req.body?.email,
+                password: req.body?.password
+                    ? "***"
+                    : undefined,
+            });
             const { email, password, } = req.body ?? {};
-            if (!email?.trim() || !password) {
+            if (!email?.trim() ||
+                !password) {
                 return res.status(400).json({
                     success: false,
                     message: "Email and password are required",
                 });
             }
             const result = await auth_service_1.default.login({
-                email: email.trim().toLowerCase(),
+                email: email
+                    .trim()
+                    .toLowerCase(),
                 password,
+            });
+            console.log("LOGIN SUCCESS:", {
+                userId: result.user?.id,
+                email: result.user?.email,
+                role: result.user?.role,
+                hasAccessToken: !!result.accessToken,
+                hasRefreshToken: !!result.refreshToken,
             });
             return res.status(200).json({
                 success: true,
@@ -82,14 +100,15 @@ class AuthController {
     }
     /**
      * =====================================================
-     * REFRESH ACCESS TOKEN
+     * REFRESH
      * =====================================================
      */
     async refresh(req, res) {
         try {
             const { refreshToken, } = req.body ?? {};
             if (!refreshToken ||
-                typeof refreshToken !== "string") {
+                typeof refreshToken !==
+                    "string") {
                 return res.status(400).json({
                     success: false,
                     message: "Refresh token is required",
@@ -121,7 +140,8 @@ class AuthController {
         try {
             const { refreshToken, } = req.body ?? {};
             if (!refreshToken ||
-                typeof refreshToken !== "string") {
+                typeof refreshToken !==
+                    "string") {
                 return res.status(400).json({
                     success: false,
                     message: "Refresh token is required",

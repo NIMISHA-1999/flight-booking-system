@@ -130,7 +130,7 @@ export default function AdminBookingsPage() {
         const response =
           await getAdminBookings({
             page: requestedPage,
-            limit: 10,
+            limit: 6,
 
             status:
               status || undefined,

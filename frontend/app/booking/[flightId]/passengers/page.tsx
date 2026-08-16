@@ -215,19 +215,40 @@ export default function PassengerPage() {
    */
 
   const handleContinue = async () => {
-    // Check login first
+    /*
+     * =====================================================
+     * CHECK LOGIN FIRST
+     * =====================================================
+     */
+
     const accessToken = localStorage.getItem("accessToken");
 
     if (!accessToken) {
+      /*
+       * Save current booking page so we can return
+       * here after successful login.
+       */
       const currentUrl = window.location.pathname + window.location.search;
 
       localStorage.setItem("redirectAfterLogin", currentUrl);
 
+      /*
+       * IMPORTANT:
+       * Do NOT navigate to /login here.
+       *
+       * Show the warning modal first.
+       */
       setShowLoginModal(true);
+
       return;
     }
 
-    // Validate passenger details
+    /*
+     * =====================================================
+     * VALIDATE PASSENGERS
+     * =====================================================
+     */
+
     if (!validatePassengers()) {
       window.scrollTo({
         top: 0,
@@ -236,6 +257,12 @@ export default function PassengerPage() {
 
       return;
     }
+
+    /*
+     * =====================================================
+     * CREATE BOOKING
+     * =====================================================
+     */
 
     try {
       setSubmitting(true);
@@ -247,6 +274,10 @@ export default function PassengerPage() {
 
       console.log("BOOKING CREATED:", response);
 
+      /*
+       * Go to payment only after booking
+       * has been successfully created.
+       */
       router.push(
         `/booking/${flightId}/payment?bookingId=${response.booking.id}`,
       );
@@ -263,7 +294,6 @@ export default function PassengerPage() {
       setSubmitting(false);
     }
   };
-
   /*
    * =====================================================
    * LOADING
@@ -697,7 +727,10 @@ export default function PassengerPage() {
               <div className="mt-6 space-y-3">
                 <button
                   type="button"
-                  onClick={() => router.push("/login")}
+                  onClick={() => {
+                    setShowLoginModal(false);
+                    router.push("/login");
+                  }}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-700/20 transition hover:bg-blue-800"
                 >
                   Login to Continue

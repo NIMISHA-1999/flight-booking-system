@@ -8,10 +8,17 @@ const auth_routes_1 = __importDefault(require("./auth.routes"));
 const flight_routes_1 = __importDefault(require("./flight.routes"));
 const booking_routes_1 = __importDefault(require("./booking.routes"));
 const payment_routes_1 = __importDefault(require("./payment.routes"));
+const cancellation_routes_1 = __importDefault(require("./cancellation.routes"));
+const admin_routes_1 = __importDefault(require("./admin.routes"));
+const admin_user_routes_1 = __importDefault(require("./admin.user.routes"));
 const router = (0, express_1.Router)();
 router.use("/auth", auth_routes_1.default);
 router.use("/flights", flight_routes_1.default);
 router.use("/bookings", booking_routes_1.default);
 router.use("/payments", payment_routes_1.default);
+// router.use("/stripe", stripeWebhookRoutes);
+router.use("/bookings", cancellation_routes_1.default);
+router.use("/admin", admin_routes_1.default);
+router.use("/admin/users", admin_user_routes_1.default);
 exports.default = router;
 //# sourceMappingURL=index.js.map

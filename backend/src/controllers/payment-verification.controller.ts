@@ -1,19 +1,27 @@
-import { Request, Response } from "express";
+import { Response } from "express";
+
+import {
+  AuthenticatedRequest,
+} from "../types/auth.types";
 
 import {
   paymentVerificationService,
 } from "../services/payment-verification.service";
 
 export const verifyPayment = async (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
 ) => {
   try {
-    const { sessionId } = req.body;
+    const {
+      sessionId,
+    } = req.body;
 
-    const userId = req.user?.userId;
+    const userId =
+      req.user?.userId;
 
     console.log("");
+
     console.log(
       "========== VERIFY PAYMENT ==========",
     );
@@ -31,14 +39,16 @@ export const verifyPayment = async (
     if (!sessionId) {
       return res.status(400).json({
         success: false,
-        message: "Stripe session ID is required.",
+        message:
+          "Stripe session ID is required.",
       });
     }
 
     if (!userId) {
       return res.status(401).json({
         success: false,
-        message: "Unauthorized.",
+        message:
+          "Unauthorized.",
       });
     }
 

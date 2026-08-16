@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const booking_controller_1 = require("../controllers/booking.controller");
 const auth_middleware_1 = require("../middleware/auth.middleware");
+const cancellation_controller_1 = require("../controllers/cancellation.controller");
 const router = (0, express_1.Router)();
 /*
  * Create booking
@@ -16,5 +17,9 @@ router.get("/", auth_middleware_1.authMiddleware, booking_controller_1.bookingCo
  * Get single booking
  */
 router.get("/:bookingId", auth_middleware_1.authMiddleware, booking_controller_1.bookingController.getBooking.bind(booking_controller_1.bookingController));
+// Cancel booking
+//
+//PATCH /api/bookings/:bookingId/cancel
+router.patch("/:bookingId/cancel", auth_middleware_1.authMiddleware, cancellation_controller_1.cancelBooking);
 exports.default = router;
 //# sourceMappingURL=booking.routes.js.map
