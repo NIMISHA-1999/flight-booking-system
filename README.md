@@ -79,8 +79,21 @@ cd backend
 cp .env.example .env
 
 npm install
+
+# Create and apply Prisma database migration
 npx prisma migrate dev --name init
+
 npx prisma db seed
+
+# Seed mock flight and admin data
+npm run seed:all
+
+# Seed mock flight
+npm run seed
+
+# Seed admin user
+npm run seed:admin
+
 npx prisma studio          # optional visual DB tool
 npm run dev                # → http://localhost:4000
 
@@ -103,10 +116,11 @@ brew install ngrok
 ngrok config add-authtoken YOUR_NGROK_AUTH_TOKEN
 ngrok http 4000
 
-
-Admin Access
+# Admin Access
 
 URL: http://localhost:3000/admin/login
+
+Login admin with using the below credentials
 
 Email: admin@skybook.com
 
