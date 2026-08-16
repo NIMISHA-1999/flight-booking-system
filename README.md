@@ -54,7 +54,6 @@ flight-booking-system/
 
 ### 1. Clone the repository
 
-```bash
 git clone https://github.com/NIMISHA-1999/flight-booking-system.git
 cd flight-booking
 
