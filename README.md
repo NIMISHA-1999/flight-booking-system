@@ -8,12 +8,26 @@ This project was bootstrapped with [`create-next-app`](https://nextjs.org/docs/a
 
 ## Features
 
-- Flight search & booking
-- Seat selection with concurrency-safe inventory
-- Stripe Checkout + webhook handling
-- Admin dashboard
-- Mock flight seed data
-- Dockerized Postgres for easy local development
+## Features
+
+- Flight search by origin, destination, and departure date
+- Mock flight inventory and seed data
+- Flight details
+- Passenger information collection
+- Pending booking state while payment is processed
+- Stripe Checkout payment flow
+- Stripe webhook-based payment confirmation
+- Payment failure handling
+- Booking cancellation
+- Stripe refund handling
+- Automatic seat release after cancellation
+- JWT-based authentication
+- Admin login
+- Admin booking management
+- Booking filtering and pagination
+- Booking/payment status visibility
+- Dockerized PostgreSQL
+- Prisma migrations and seed scripts
 
 ---
 
